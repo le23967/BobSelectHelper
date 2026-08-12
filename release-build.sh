@@ -121,6 +121,11 @@ create_universal_binary() {
     cp "$ROOT/Resources/Info.plist" "$contents/Info.plist"
     cp "$ROOT/LauncherResources/Info.plist" "$launcher_contents/Info.plist"
 
+    # Copy icon set to resources
+    if [ -d "$ROOT/Resources/AppIcon.appiconset" ]; then
+        ditto "$ROOT/Resources/AppIcon.appiconset" "$resources_dir/AppIcon.appiconset"
+    fi
+
     chmod +x "$macos_dir/$EXECUTABLE_NAME"
     chmod +x "$launcher_macos_dir/$LAUNCHER_EXECUTABLE_NAME"
 
@@ -129,6 +134,7 @@ create_universal_binary() {
 
     echo "  ✓ Universal binary created"
     echo "  ✓ Code signed"
+    echo "  ✓ Icon assets included"
 }
 
 create_dmg() {
@@ -136,21 +142,52 @@ create_dmg() {
     local dmg_path="$RELEASE_DIR/$dmg_name"
     local app_dir="$BUILD_DIR/$APP_NAME.app"
     local temp_dmg="$TEMP_BUILD/temp.dmg"
-    local temp_mount="$TEMP_BUILD/dmg-mount"
+    local dmg_temp_dir="$TEMP_BUILD/dmg-contents"
 
     echo ""
     echo "Creating macOS disk image: $dmg_name"
     echo "------------------------------------"
 
-    mkdir -p "$temp_mount"
+    mkdir -p "$dmg_temp_dir"
 
-    hdiutil create -volname "$APP_NAME" -srcfolder "$app_dir" -ov -format UDZO "$temp_dmg" >/dev/null 2>&1
+    # Copy app to temporary DMG folder
+    ditto "$app_dir" "$dmg_temp_dir/$APP_NAME.app"
+
+    # Create symlink to Applications folder
+    ln -s /Applications "$dmg_temp_dir/Applications"
+
+    # Create installation instructions file
+    cat > "$dmg_temp_dir/INSTALL.txt" << 'EOF'
+INSTALLATION INSTRUCTIONS
+=========================
+
+1. Drag "Bob Select Helper" to the "Applications" folder
+2. Wait for the copy to complete
+3. Close this window
+4. Launch "Bob Select Helper" from Applications folder
+
+First Launch:
+- Grant Accessibility permissions when prompted
+- Enjoy!
+EOF
+
+    # Create the DMG
+    hdiutil create \
+        -volname "$APP_NAME" \
+        -srcfolder "$dmg_temp_dir" \
+        -ov \
+        -format UDZO \
+        "$temp_dmg" >/dev/null 2>&1
 
     if [ -f "$dmg_path" ]; then
         rm "$dmg_path"
     fi
 
     mv "$temp_dmg" "$dmg_path"
+
+    # Remove quarantine attribute
+    xattr -d com.apple.quarantine "$dmg_path" 2>/dev/null || true
+
     echo "  ✓ DMG created: $dmg_path"
 }
 

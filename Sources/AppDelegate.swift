@@ -47,7 +47,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        let enabled = NSMenuItem(title: "启用划词助手", action: #selector(toggleEnabled), keyEquivalent: "")
+        let enabled = NSMenuItem(title: "Enable Helper", action: #selector(toggleEnabled), keyEquivalent: "")
         enabled.target = self
         enabled.state = settings.isEnabled ? .on : .off
         menu.addItem(enabled)
@@ -55,65 +55,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
 
         let triggerMenu = NSMenu()
-        let hover = NSMenuItem(title: "悬停后翻译", action: #selector(useHoverMode), keyEquivalent: "")
+        let hover = NSMenuItem(title: "Translate on Hover", action: #selector(useHoverMode), keyEquivalent: "")
         hover.target = self
         hover.state = settings.activationMode == .hover ? .on : .off
         triggerMenu.addItem(hover)
 
-        let click = NSMenuItem(title: "点击后翻译", action: #selector(useClickMode), keyEquivalent: "")
+        let click = NSMenuItem(title: "Translate on Click", action: #selector(useClickMode), keyEquivalent: "")
         click.target = self
         click.state = settings.activationMode == .click ? .on : .off
         triggerMenu.addItem(click)
 
-        let triggerItem = NSMenuItem(title: "触发方式", action: nil, keyEquivalent: "")
+        let triggerItem = NSMenuItem(title: "Trigger Method", action: nil, keyEquivalent: "")
         triggerItem.submenu = triggerMenu
         menu.addItem(triggerItem)
 
         let inputBoxMenu = NSMenu()
-        addInputBoxStateItem("总是展开输入框", value: .alwaysUnfold, to: inputBoxMenu)
-        addInputBoxStateItem("跟随 Bob 当前状态", value: .last, to: inputBoxMenu)
-        addInputBoxStateItem("总是折叠输入框", value: .alwaysFold, to: inputBoxMenu)
-        let inputBoxItem = NSMenuItem(title: "Bob 输入框", action: nil, keyEquivalent: "")
+        addInputBoxStateItem("Always Expand Input Box", value: .alwaysUnfold, to: inputBoxMenu)
+        addInputBoxStateItem("Follow Bob's State", value: .last, to: inputBoxMenu)
+        addInputBoxStateItem("Always Collapse Input Box", value: .alwaysFold, to: inputBoxMenu)
+        let inputBoxItem = NSMenuItem(title: "Bob Input Box", action: nil, keyEquivalent: "")
         inputBoxItem.submenu = inputBoxMenu
         menu.addItem(inputBoxItem)
 
         let delayMenu = NSMenu()
-        addDelayItem("立即", value: 0.0, to: delayMenu)
-        addDelayItem("快速（0.12 秒）", value: 0.12, to: delayMenu)
-        addDelayItem("平衡（0.22 秒）", value: 0.22, to: delayMenu)
-        addDelayItem("较慢（0.40 秒）", value: 0.40, to: delayMenu)
-        addDelayItem("防误触（0.70 秒）", value: 0.70, to: delayMenu)
-        let delayItem = NSMenuItem(title: "悬停延迟", action: nil, keyEquivalent: "")
+        addDelayItem("Immediate", value: 0.0, to: delayMenu)
+        addDelayItem("Fast (0.12s)", value: 0.12, to: delayMenu)
+        addDelayItem("Balanced (0.22s)", value: 0.22, to: delayMenu)
+        addDelayItem("Slow (0.40s)", value: 0.40, to: delayMenu)
+        addDelayItem("Very Slow (0.70s)", value: 0.70, to: delayMenu)
+        let delayItem = NSMenuItem(title: "Hover Delay", action: nil, keyEquivalent: "")
         delayItem.submenu = delayMenu
         delayItem.isEnabled = settings.activationMode == .hover
         menu.addItem(delayItem)
 
         let sizeMenu = NSMenu()
-        addSizeItem("小（26 px）", value: 26, to: sizeMenu)
-        addSizeItem("较小（30 px）", value: 30, to: sizeMenu)
-        addSizeItem("默认（34 px）", value: 34, to: sizeMenu)
-        addSizeItem("较大（40 px）", value: 40, to: sizeMenu)
-        addSizeItem("大（48 px）", value: 48, to: sizeMenu)
-        addSizeItem("特大（56 px）", value: 56, to: sizeMenu)
-        let sizeItem = NSMenuItem(title: "悬浮图标大小", action: nil, keyEquivalent: "")
+        addSizeItem("Small (26px)", value: 26, to: sizeMenu)
+        addSizeItem("Smaller (30px)", value: 30, to: sizeMenu)
+        addSizeItem("Default (34px)", value: 34, to: sizeMenu)
+        addSizeItem("Larger (40px)", value: 40, to: sizeMenu)
+        addSizeItem("Large (48px)", value: 48, to: sizeMenu)
+        addSizeItem("Extra Large (56px)", value: 56, to: sizeMenu)
+        let sizeItem = NSMenuItem(title: "Icon Size", action: nil, keyEquivalent: "")
         sizeItem.submenu = sizeMenu
         menu.addItem(sizeItem)
 
         let positionMenu = NSMenu()
-        addPositionItem("右下方", value: .belowRight, to: positionMenu)
-        addPositionItem("右上方", value: .aboveRight, to: positionMenu)
-        addPositionItem("左下方", value: .belowLeft, to: positionMenu)
-        addPositionItem("左上方", value: .aboveLeft, to: positionMenu)
-        let positionItem = NSMenuItem(title: "图标出现位置", action: nil, keyEquivalent: "")
+        addPositionItem("Bottom Right", value: .belowRight, to: positionMenu)
+        addPositionItem("Top Right", value: .aboveRight, to: positionMenu)
+        addPositionItem("Bottom Left", value: .belowLeft, to: positionMenu)
+        addPositionItem("Top Left", value: .aboveLeft, to: positionMenu)
+        let positionItem = NSMenuItem(title: "Icon Position", action: nil, keyEquivalent: "")
         positionItem.submenu = positionMenu
         menu.addItem(positionItem)
 
         let hideMenu = NSMenu()
-        addAutoHideItem("2 秒", value: 2, to: hideMenu)
-        addAutoHideItem("5 秒", value: 5, to: hideMenu)
-        addAutoHideItem("10 秒", value: 10, to: hideMenu)
-        addAutoHideItem("不自动隐藏", value: 0, to: hideMenu)
-        let hideItem = NSMenuItem(title: "自动隐藏", action: nil, keyEquivalent: "")
+        addAutoHideItem("2 seconds", value: 2, to: hideMenu)
+        addAutoHideItem("5 seconds", value: 5, to: hideMenu)
+        addAutoHideItem("10 seconds", value: 10, to: hideMenu)
+        addAutoHideItem("Never Auto-hide", value: 0, to: hideMenu)
+        let hideItem = NSMenuItem(title: "Auto-hide Duration", action: nil, keyEquivalent: "")
         hideItem.submenu = hideMenu
         menu.addItem(hideItem)
 
@@ -123,9 +123,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let autoLaunchTitle: String
         switch autoLaunchStatus {
         case .requiresApproval:
-            autoLaunchTitle = "打开 Bob 时自动启动（待系统允许）"
+            autoLaunchTitle = "Auto-launch with Bob (Pending Approval)"
         default:
-            autoLaunchTitle = "打开 Bob 时自动启动"
+            autoLaunchTitle = "Auto-launch with Bob"
         }
 
         let autoLaunch = NSMenuItem(title: autoLaunchTitle, action: #selector(toggleBobAutoLaunch), keyEquivalent: "")
@@ -143,12 +143,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(autoLaunch)
 
         if autoLaunchStatus == .requiresApproval {
-            let loginItems = NSMenuItem(title: "打开登录项设置并允许", action: #selector(openLoginItemsSettings), keyEquivalent: "")
+            let loginItems = NSMenuItem(title: "Open Login Items and Allow", action: #selector(openLoginItemsSettings), keyEquivalent: "")
             loginItems.target = self
             menu.addItem(loginItems)
         }
 
-        let fallback = NSMenuItem(title: "不兼容软件使用 Command-C 取词", action: #selector(toggleCopyFallback), keyEquivalent: "")
+        let fallback = NSMenuItem(title: "Use Command-C Fallback", action: #selector(toggleCopyFallback), keyEquivalent: "")
         fallback.target = self
         fallback.state = settings.copyFallbackEnabled ? .on : .off
         menu.addItem(fallback)
@@ -157,21 +157,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         appFilter.target = self
         menu.addItem(appFilter)
 
-        let permission = NSMenuItem(title: "打开辅助功能权限", action: #selector(requestAccessibility), keyEquivalent: "")
+        let permission = NSMenuItem(title: "Open Accessibility Permissions", action: #selector(requestAccessibility), keyEquivalent: "")
         permission.target = self
         menu.addItem(permission)
 
-        let test = NSMenuItem(title: "测试 Bob 连接", action: #selector(testBob), keyEquivalent: "")
+        let test = NSMenuItem(title: "Test Bob Connection", action: #selector(testBob), keyEquivalent: "")
         test.target = self
         menu.addItem(test)
 
         menu.addItem(.separator())
 
-        let about = NSMenuItem(title: "使用说明", action: #selector(showWelcomeFromMenu), keyEquivalent: "")
+        let about = NSMenuItem(title: "Instructions", action: #selector(showWelcomeFromMenu), keyEquivalent: "")
         about.target = self
         menu.addItem(about)
 
-        let quit = NSMenuItem(title: "退出 Bob Select Helper", action: #selector(quitApp), keyEquivalent: "q")
+        let quit = NSMenuItem(title: "Quit Bob Select Helper", action: #selector(quitApp), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
     }
@@ -313,11 +313,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if showApprovalPrompt, bobAutoLaunchService.status == .requiresApproval {
                 NSApplication.shared.activate(ignoringOtherApps: true)
                 let alert = NSAlert()
-                alert.messageText = "允许随 Bob 自动启动"
-                alert.informativeText = "macOS 已登记 Bob Select Helper Launcher，但需要你在“系统设置 > 通用 > 登录项与扩展”中允许它在后台运行。以后打开 Bob 时，Bob Select Helper 会自动启动。"
+                alert.messageText = “Allow Auto-launch with Bob”
+                alert.informativeText = “macOS has registered Bob Select Helper Launcher, but you need to allow it to run in the background in System Settings > General > Login Items & Extensions. Bob Select Helper will automatically launch when you open Bob.”
                 alert.alertStyle = .informational
-                alert.addButton(withTitle: "打开登录项设置")
-                alert.addButton(withTitle: "稍后")
+                alert.addButton(withTitle: “Open Login Items”)
+                alert.addButton(withTitle: “Later”)
                 if alert.runModal() == .alertFirstButtonReturn {
                     bobAutoLaunchService.openLoginItemsSettings()
                 }
@@ -330,10 +330,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func showWelcome() {
         NSApplication.shared.activate(ignoringOtherApps: true)
         let alert = NSAlert()
-        alert.messageText = "Bob Select Helper"
-        alert.informativeText = "拖选文字、双击单词或三击段落后，鼠标旁会出现一个 Bob 图标。\n\n点击菜单栏图标，可以自定义：悬停或点击触发、Bob 输入框总是展开/跟随/折叠、打开 Bob 时自动启动、图标大小、悬停延迟、出现位置和自动隐藏时间。\n\n首次使用需要允许辅助功能权限；系统询问是否允许控制 Bob 时，请选择允许。"
+        alert.messageText = “Bob Select Helper”
+        alert.informativeText = “After selecting text by dragging, double-clicking a word, or triple-clicking a paragraph, a Bob icon will appear next to your cursor.\n\nClick the menu bar icon to customize: hover or click trigger, Bob input box behavior, auto-launch with Bob, icon size, hover delay, position, and auto-hide duration.\n\nYou'll need to grant Accessibility permissions on first use. When macOS asks if Bob Select Helper may control Bob, please allow it.”
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "知道了")
+        alert.addButton(withTitle: “Got It”)
         alert.runModal()
     }
 
@@ -341,7 +341,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSSound.beep()
         NSApplication.shared.activate(ignoringOtherApps: true)
         let alert = NSAlert(error: error)
-        alert.informativeText += "\n\n请确认已经安装 Bob，并在系统设置 > 隐私与安全性 > 自动化中允许 Bob Select Helper 控制 Bob。"
+        alert.informativeText += “\n\nPlease ensure Bob is installed and that Bob Select Helper has permission to control Bob in System Settings > Privacy & Security > Automation.”
         alert.runModal()
     }
 }

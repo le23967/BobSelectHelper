@@ -1,29 +1,35 @@
-# Bob Select Helper 0.3.0
+# Bob Select Helper 0.4.0
 
 A lightweight, independent macOS menu-bar helper that recreates the useful part of Easydict's mouse-selection workflow and sends selected text to Bob.
 
+## What's new in 0.4.0
+
+- **English UI by default** - Fully translated interface with support for other languages
+- **Application Filter Settings** - Control which applications can use the helper:
+  - Allow All (default) - Works in all applications
+  - Whitelist mode - Only listed apps can trigger the helper
+  - Blacklist mode - All apps except listed ones can trigger the helper
+- **Universal Binary** - Single release package supports both Intel and Apple Silicon Macs
+- **Improved Distribution** - DMG and ZIP releases with checksums
+
 ## What's new in 0.3.0
 
-- Added **打开 Bob 时自动启动**.
-- A small bundled login-item launcher waits silently in the background.
-- When macOS detects that Bob (`com.hezongyidev.Bob`) has launched, it opens Bob Select Helper without bringing anything to the foreground.
-- If Bob is already running when the launcher starts, Bob Select Helper opens immediately.
-- The feature can be turned on or off from the Bob Select Helper menu-bar menu.
-- On some macOS installations, the first registration shows **待系统允许**. Open **System Settings > General > Login Items & Extensions** and allow **Bob Select Helper Launcher** under background items.
-
-This is different from simply launching Bob Select Helper at login: the launcher stays silent and starts the visible helper only after Bob is running.
+- Added **Auto-launch with Bob** feature
+- A small bundled login-item launcher waits silently in the background
+- When macOS detects that Bob (`com.hezongyidev.Bob`) has launched, it opens Bob Select Helper without bringing anything to the foreground
+- If Bob is already running when the launcher starts, Bob Select Helper opens immediately
+- The feature can be turned on or off from the Bob Select Helper menu-bar menu
 
 ## Previous fixes
 
-- Persistent Bob input-box setting: always unfold, follow current state, or always fold.
-- Hover/click trigger modes, delay, icon size, position, auto-hide, and Command-C fallback.
-- **Application Filter Settings**: Control which applications can use the helper with whitelist or blacklist modes.
+- Persistent Bob input-box setting: always unfold, follow current state, or always fold
+- Hover/click trigger modes, delay, icon size, position, auto-hide, and Command-C fallback
 
 ## Requirements
 
-- macOS 13 or later
+- macOS 11 or later (Intel or Apple Silicon)
 - Bob 1.5.0 or later
-- Apple command-line developer tools
+- Apple command-line developer tools (for development only)
 
 Install the developer tools once if needed:
 
@@ -31,7 +37,19 @@ Install the developer tools once if needed:
 xcode-select --install
 ```
 
-## Build and install
+## Architecture Support
+
+This project supports both Intel (x86_64) and Apple Silicon (arm64) Macs through universal binaries. A single release package works on all supported Macs without separate downloads.
+
+## Installation from Release
+
+1. Download the latest release from [GitHub Releases](https://github.com/le23967/BobSelectHelper/releases)
+2. Open the DMG or extract the ZIP file
+3. Drag **Bob Select Helper** to your **Applications** folder
+4. Launch it from Applications
+5. Grant Accessibility permissions when prompted
+
+## Build and Install from Source
 
 Open Terminal, type `cd ` with a trailing space, drag this folder into Terminal, press Return, then run:
 
@@ -45,7 +63,28 @@ The app is installed to:
 ~/Applications/Bob Select Helper.app
 ```
 
-The first launch registers the bundled launcher automatically. If macOS asks for approval, choose **打开登录项设置**, then enable **Bob Select Helper Launcher**.
+The first launch registers the bundled launcher automatically. If macOS asks for approval, open **System Settings > General > Login Items & Extensions** and enable **Bob Select Helper Launcher**.
+
+## Creating Release Builds
+
+To build universal binaries for both Intel and Apple Silicon:
+
+```bash
+./release-build.sh
+```
+
+This creates DMG and ZIP releases in the `releases/` directory with:
+- Universal binary (works on both architectures)
+- Code signing
+- SHA256 checksums
+
+To publish to GitHub:
+
+```bash
+./create-release.sh
+```
+
+This requires GitHub CLI to be installed and authenticated.
 
 ## Menu-bar settings
 
@@ -72,14 +111,17 @@ To access the settings, click "Application Filter Settings" in the menu bar menu
 
 ## First-run permissions
 
-1. Allow Accessibility access for Bob Select Helper.
-2. When macOS asks whether Bob Select Helper may control Bob, choose Allow.
-3. If the auto-launch menu says **待系统允许**, enable Bob Select Helper Launcher in Login Items.
+1. Allow Accessibility access for Bob Select Helper
+2. When macOS asks whether Bob Select Helper may control Bob, choose **Allow**
+3. If the auto-launch menu shows **"(Pending Approval)"**, open System Settings and enable **Bob Select Helper Launcher** in **General > Login Items & Extensions**
 
 ## Uninstall
 
-First turn off **打开 Bob 时自动启动** from the menu, then quit the helper and delete:
+1. Open Bob Select Helper and click the menu-bar icon
+2. Turn off "Auto-launch with Bob"
+3. Quit the helper
+4. Delete the app from Applications folder:
 
-```text
-~/Applications/Bob Select Helper.app
+```bash
+rm -rf ~/Applications/Bob\ Select\ Helper.app
 ```

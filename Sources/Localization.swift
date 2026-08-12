@@ -178,7 +178,7 @@ struct Localization {
         static var allowAutolaunchMessage: String {
             current == .english ?
                 "macOS has registered Bob Select Helper Launcher, but you need to allow it to run in the background in System Settings > General > Login Items & Extensions. Bob Select Helper will automatically launch when you open Bob." :
-                "macOS 已登记 Bob Select Helper Launcher，但需要你在"系统设置 > 通用 > 登录项与扩展"中允许它在后台运行。以后打开 Bob 时，Bob Select Helper 会自动启动。"
+                "macOS 已登记 Bob Select Helper Launcher，但需要你在\"系统设置 > 通用 > 登录项与扩展\"中允许它在后台运行。以后打开 Bob 时，Bob Select Helper 会自动启动。"
         }
 
         static var later: String {

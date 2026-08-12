@@ -86,9 +86,37 @@ To publish to GitHub:
 
 This requires GitHub CLI to be installed and authenticated.
 
-## Menu-bar settings
+## Menu Bar App
 
-Click the `character.bubble` icon in the macOS menu bar. You can change:
+**Important:** Bob Select Helper is a menu bar app, not a Dock app.
+
+- The app runs silently in the background
+- Look for the icon in the **top-right menu bar** (next to system clock)
+- The app does **not** appear in the Dock
+- Click the menu bar icon to access settings
+
+## Language Support
+
+Bob Select Helper supports both **English** and **Chinese (简体中文)**.
+
+To change the language, modify `Sources/Localization.swift`:
+```swift
+// Change this line:
+Localization.current = .english  // Switch to .chinese
+```
+
+Then rebuild the app:
+```bash
+./release-build.sh
+```
+
+Available languages:
+- **English** (.english)
+- **Chinese Simplified** (.chinese)
+
+## Menu-bar Settings
+
+Click the icon in the **top-right menu bar** to access settings. You can change:
 
 - Open Bob -> automatically start Bob Select Helper
 - Bob input box: always unfold, follow current state, or always fold

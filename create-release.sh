@@ -21,14 +21,23 @@ echo "Creating GitHub Release v$VERSION"
 echo "===================================="
 echo ""
 
-RELEASE_NOTES="Release v$VERSION - Professional Icon & Improved Installation
+RELEASE_NOTES="Release v0.5.1 - Multi-language Support & Menu Bar Enhancements
 
-## Major Improvements in v0.5.0
+## Major Improvements in v0.5.1
 
-- ✨ **Professional Custom Icon** - Beautiful icon for Dock, Finder, and Launchpad
-- 🎯 **Fixed Installation** - Drag-and-drop to Applications now works perfectly
-- 🔧 **Improved DMG** - Better installer with clear setup instructions
-- 📱 **Universal Binary** - Optimized for both Intel and Apple Silicon
+- 🌐 **Chinese Localization** - Full support for Chinese (简体中文)
+- ✨ **Professional Menu Bar Icon** - Displays in top-right system menu bar
+- 🎯 **Improved Installation** - Drag-and-drop to Applications works perfectly
+- 🔧 **Better DMG Layout** - Applications folder visible for easy installation
+- 📱 **Universal Binary** - Native support for Intel and Apple Silicon
+
+## Important Notes
+
+### This is a Menu Bar App
+- App icon appears in the **top-right menu bar**, NOT the Dock
+- Click the icon to access settings
+- Runs silently in the background
+- Perfect for quick access without cluttering your Dock
 
 ## Installation Instructions
 

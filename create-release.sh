@@ -21,46 +21,41 @@ echo "Creating GitHub Release v$VERSION"
 echo "===================================="
 echo ""
 
-RELEASE_NOTES="Bob Select Helper v0.6.0
+RELEASE_NOTES="Bob Select Helper v0.6.1
 
-## You can hide the Dock icon now
+## Menu-bar only by default
 
-Previous builds decided the Dock icon once at startup with no way to change it. There is
-now a **Show icon in the Dock** switch in Settings > General, and in the menu-bar menu.
-Turn it off and the Dock tile disappears straight away, no restart, and the app keeps
-running from the menu bar. The setting is remembered.
+A Dock icon means the app takes focus when it activates, and its menu bar replaces the one
+belonging to whatever app you were just in. For a tool whose entire job is acting on text
+you selected somewhere else, that gets in the way. It also costs a permanent Dock slot and
+a Cmd-Tab entry for something you open only to change a setting.
 
-## Opening the app makes sense now
+So a fresh install now runs from the menu bar alone. If you want a Dock icon, the switch is
+still there under **Show icon in the Dock**, in Settings > General or in the menu-bar menu,
+and it takes effect immediately. If you already set a preference in 0.6.0, it is kept.
 
-Before, launching it dropped you into a bare list of application bundle IDs with no
-explanation. The window now opens on a proper Settings screen: what the app does, whether
-Accessibility is granted (with a button to fix it), and every option grouped under
-**General**, **Appearance**, **Bob** and **Applications**.
+Settings is reachable either way: from the menu-bar icon, or by launching the app again
+from Applications.
 
-Language is a normal setting too. Pick English or 简体中文 and the whole interface changes
-immediately.
+## Everything from 0.6.0
 
-## Lighter and more stable
-
-- Fixed a crash in the mouse-event monitor, which removed its own handler while that
-  handler was still running.
-- Drag events are only watched between mouse-down and mouse-up, not system-wide at all
-  times.
-- Scroll events return immediately when no icon is on screen; every tick used to do work.
-- Settings are read from memory instead of hitting UserDefaults on every mouse event.
-- The application list is scanned once, in the background, only when you open that tab.
-
-Measured on an M-series Mac: idle 0% CPU, and memory stays flat across repeated opening
-and closing of the settings window.
+- A real Settings window: what the app does, whether Accessibility is granted, and every
+  option grouped under General / Appearance / Bob / Applications
+- English and 简体中文, switchable in the app, following your macOS language on first launch
+- Fixed a crash in the mouse-event monitor, which removed its own handler mid-callback
+- Drag events watched only between mouse-down and mouse-up, not system-wide at all times
+- Scroll events return immediately when no icon is showing
+- Settings read from memory rather than UserDefaults on every mouse event
+- Application list scanned once, in the background, only when that tab is opened
 
 ## Install
 
 1. Download the DMG
 2. Open it and drag **Bob Select Helper** onto **Applications**
 3. Launch it and grant Accessibility permission when asked
+4. Look for the speech-bubble icon in the **menu bar**, top right
 
-Quit any older copy first. A previous version left running in /Applications will keep
-running and mask the new one.
+Quit any older copy first. A previous version left running will mask the new one.
 
 ## Requirements
 

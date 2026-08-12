@@ -1,4 +1,5 @@
 import AppKit
+import UniformTypeIdentifiers
 
 /// The window shown when the Dock icon or the menu's settings item is used.
 ///
@@ -36,13 +37,14 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let filterHintLabel = NSTextField(labelWithString: "")
     private let appTable = NSTableView()
     private let appScroll = NSScrollView()
-    private let appCombo = NSComboBox()
     private let addButton = NSButton()
     private let removeButton = NSButton()
+    private let emptyLabel = NSTextField(labelWithString: "")
 
     private var listedApps: [String] = []
-    private var installedApps: [(name: String, bundleID: String)] = []
-    private var didLoadInstalledApps = false
+    /// Resolved display name and icon per bundle identifier, so redrawing a row
+    /// does not hit NSWorkspace again.
+    private var resolved: [String: (name: String, icon: NSImage)] = [:]
 
     /// Grid row labels are built once, so each keeps a provider that `refresh()`
     /// re-evaluates when the language changes.
@@ -220,35 +222,64 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         appTable.headerView = nil
         appTable.dataSource = self
         appTable.delegate = self
-        appTable.rowHeight = 20
+        appTable.rowHeight = 24
+        appTable.allowsMultipleSelection = true
+        appTable.style = .inset
 
         appScroll.documentView = appTable
         appScroll.hasVerticalScroller = true
         appScroll.borderType = .bezelBorder
         appScroll.translatesAutoresizingMaskIntoConstraints = false
-        appScroll.heightAnchor.constraint(equalToConstant: 150).isActive = true
 
-        appCombo.isEditable = true
-        appCombo.completes = true
-        appCombo.usesDataSource = true
-        appCombo.dataSource = self
-        appCombo.target = self
-        appCombo.action = #selector(addApp)
+        emptyLabel.alignment = .center
+        emptyLabel.font = .systemFont(ofSize: 11)
+        emptyLabel.textColor = .tertiaryLabelColor
+        emptyLabel.lineBreakMode = .byWordWrapping
+        emptyLabel.maximumNumberOfLines = 3
+        emptyLabel.translatesAutoresizingMaskIntoConstraints = false
 
-        addButton.bezelStyle = .rounded
+        // The placeholder sits over the empty table rather than shifting the layout.
+        let listArea = NSView()
+        listArea.translatesAutoresizingMaskIntoConstraints = false
+        listArea.addSubview(appScroll)
+        listArea.addSubview(emptyLabel)
+        NSLayoutConstraint.activate([
+            appScroll.topAnchor.constraint(equalTo: listArea.topAnchor),
+            appScroll.leadingAnchor.constraint(equalTo: listArea.leadingAnchor),
+            appScroll.trailingAnchor.constraint(equalTo: listArea.trailingAnchor),
+            appScroll.bottomAnchor.constraint(equalTo: listArea.bottomAnchor),
+            listArea.heightAnchor.constraint(equalToConstant: 168),
+            emptyLabel.centerXAnchor.constraint(equalTo: listArea.centerXAnchor),
+            emptyLabel.centerYAnchor.constraint(equalTo: listArea.centerYAnchor),
+            emptyLabel.widthAnchor.constraint(lessThanOrEqualTo: listArea.widthAnchor, constant: -32)
+        ])
+
+        // Standard macOS list editing: a +/- pair under the table, not a text field.
+        addButton.bezelStyle = .smallSquare
+        addButton.setButtonType(.momentaryPushIn)
+        addButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: nil)
         addButton.target = self
         addButton.action = #selector(addApp)
 
-        removeButton.bezelStyle = .rounded
+        removeButton.bezelStyle = .smallSquare
+        removeButton.setButtonType(.momentaryPushIn)
+        removeButton.image = NSImage(systemSymbolName: "minus", accessibilityDescription: nil)
         removeButton.target = self
         removeButton.action = #selector(removeApp)
 
-        let addRow = NSStackView(views: [appCombo, addButton, removeButton])
-        addRow.orientation = .horizontal
-        addRow.spacing = 8
-        appCombo.setContentHuggingPriority(.defaultLow, for: .horizontal)
+        for button in [addButton, removeButton] {
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.widthAnchor.constraint(equalToConstant: 28).isActive = true
+            button.heightAnchor.constraint(equalToConstant: 22).isActive = true
+        }
 
-        return makeTabBody([modeSegment, filterHintLabel, appScroll, addRow], fillWidth: true)
+        let spacer = NSView()
+        let buttonRow = NSStackView(views: [addButton, removeButton, spacer])
+        buttonRow.orientation = .horizontal
+        buttonRow.spacing = 0
+        buttonRow.setHuggingPriority(.defaultLow, for: .horizontal)
+
+        return makeTabBody([modeSegment, filterHintLabel, listArea, buttonRow], fillWidth: true)
     }
 
     // MARK: - Layout helpers
@@ -388,9 +419,8 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
             .firstIndex(of: settings.appFilterMode) ?? 0
         filterHintLabel.stringValue = Localization.Filter.explanation
 
-        addButton.title = Localization.Filter.add
-        removeButton.title = Localization.Filter.remove
-        appCombo.placeholderString = Localization.Filter.addApplication
+        addButton.toolTip = Localization.Filter.addTooltip
+        removeButton.toolTip = Localization.Filter.removeTooltip
 
         reloadAppList()
     }
@@ -419,60 +449,52 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private func reloadAppList() {
         let mode = settings.appFilterMode
         listedApps = mode == .whitelist
-            ? settings.whitelistedApps.sorted()
-            : (mode == .blacklist ? settings.blacklistedApps.sorted() : [])
+            ? settings.whitelistedApps.sorted { displayName(for: $0).localizedCaseInsensitiveCompare(displayName(for: $1)) == .orderedAscending }
+            : (mode == .blacklist
+                ? settings.blacklistedApps.sorted { displayName(for: $0).localizedCaseInsensitiveCompare(displayName(for: $1)) == .orderedAscending }
+                : [])
 
         let editable = mode != .allowAll
-        modeSegment.isEnabled = true
         appTable.isEnabled = editable
-        appCombo.isEnabled = editable
         addButton.isEnabled = editable
-        removeButton.isEnabled = editable
+        removeButton.isEnabled = editable && appTable.selectedRow >= 0
+
+        switch mode {
+        case .allowAll:  emptyLabel.stringValue = Localization.Filter.allowAllNotice
+        case .whitelist: emptyLabel.stringValue = Localization.Filter.emptyWhitelist
+        case .blacklist: emptyLabel.stringValue = Localization.Filter.emptyBlacklist
+        }
+        emptyLabel.isHidden = !listedApps.isEmpty
+
         appTable.reloadData()
     }
 
-    /// Scanning the applications folders is deferred until the tab is actually used,
-    /// and only ever runs once per launch.
-    private func loadInstalledAppsIfNeeded() {
-        guard !didLoadInstalledApps else { return }
-        didLoadInstalledApps = true
+    /// Resolves a bundle identifier to the app's real name and icon, caching the
+    /// result so row redraws do not repeat the lookup.
+    private func entry(for bundleID: String) -> (name: String, icon: NSImage) {
+        if let cached = resolved[bundleID] { return cached }
 
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let found = SettingsWindowController.scanInstalledApps()
-            DispatchQueue.main.async {
-                self?.installedApps = found
-                self?.appCombo.reloadData()
-            }
+        let workspace = NSWorkspace.shared
+        var name = bundleID
+        var icon = NSImage(systemSymbolName: "questionmark.app.dashed", accessibilityDescription: nil)
+            ?? NSImage(size: NSSize(width: 16, height: 16))
+
+        if let url = workspace.urlForApplication(withBundleIdentifier: bundleID) {
+            name = FileManager.default.displayName(atPath: url.path)
+            icon = workspace.icon(forFile: url.path)
         }
+        icon.size = NSSize(width: 16, height: 16)
+
+        let value = (name: name, icon: icon)
+        resolved[bundleID] = value
+        return value
     }
 
-    /// Reads each Info.plist directly. `Bundle(path:)` would work too, but CoreFoundation
-    /// caches every bundle it creates for the process lifetime, so scanning hundreds of
-    /// apps that way permanently inflates memory.
-    private static func scanInstalledApps() -> [(name: String, bundleID: String)] {
-        let manager = FileManager.default
-        let roots = ["/Applications", NSHomeDirectory() + "/Applications", "/System/Applications"]
-        var result: [(name: String, bundleID: String)] = []
-        var seen = Set<String>()
-
-        for root in roots {
-            guard let entries = try? manager.contentsOfDirectory(atPath: root) else { continue }
-            for entry in entries where entry.hasSuffix(".app") {
-                let plistPath = "\(root)/\(entry)/Contents/Info.plist"
-                guard let info = NSDictionary(contentsOfFile: plistPath),
-                      let bundleID = info["CFBundleIdentifier"] as? String,
-                      !seen.contains(bundleID)
-                else { continue }
-                seen.insert(bundleID)
-                result.append((name: String(entry.dropLast(4)), bundleID: bundleID))
-            }
-        }
-
-        return result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    private func displayName(for bundleID: String) -> String {
+        entry(for: bundleID).name
     }
 
     func show() {
-        loadInstalledAppsIfNeeded()
         refresh()
         window?.makeKeyAndOrderFront(nil)
         NSApplication.shared.activate(ignoringOtherApps: true)
@@ -546,83 +568,112 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc private func addApp() {
-        let typed = appCombo.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !typed.isEmpty else { return }
+        guard let window, settings.appFilterMode != .allowAll else { return }
 
-        let bundleID = installedApps
-            .first { $0.name.localizedCaseInsensitiveCompare(typed) == .orderedSame }?
-            .bundleID ?? typed
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.resolvesAliases = true
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.prompt = Localization.Filter.choosePanelPrompt
+        panel.message = Localization.Filter.choosePanelMessage
 
-        switch settings.appFilterMode {
-        case .whitelist: settings.addToWhitelist(bundleID)
-        case .blacklist: settings.addToBlacklist(bundleID)
-        case .allowAll: return
+        panel.beginSheetModal(for: window) { [weak self] response in
+            guard let self, response == .OK else { return }
+            for url in panel.urls {
+                guard let bundleID = SettingsWindowController.bundleIdentifier(at: url) else { continue }
+                switch self.settings.appFilterMode {
+                case .whitelist: self.settings.addToWhitelist(bundleID)
+                case .blacklist: self.settings.addToBlacklist(bundleID)
+                case .allowAll:  continue
+                }
+            }
+            self.reloadAppList()
         }
-
-        appCombo.stringValue = ""
-        reloadAppList()
     }
 
     @objc private func removeApp() {
-        let row = appTable.selectedRow
-        guard row >= 0, row < listedApps.count else { return }
-        let bundleID = listedApps[row]
+        let rows = appTable.selectedRowIndexes
+        guard !rows.isEmpty else { return }
 
-        switch settings.appFilterMode {
-        case .whitelist: settings.removeFromWhitelist(bundleID)
-        case .blacklist: settings.removeFromBlacklist(bundleID)
-        case .allowAll: return
+        for row in rows {
+            guard let bundleID = listedApps[safe: row] else { continue }
+            switch settings.appFilterMode {
+            case .whitelist: settings.removeFromWhitelist(bundleID)
+            case .blacklist: settings.removeFromBlacklist(bundleID)
+            case .allowAll:  break
+            }
         }
-
+        appTable.deselectAll(nil)
         reloadAppList()
+    }
+
+    /// Reads the identifier straight from Info.plist. Bundle(url:) would work, but
+    /// CoreFoundation caches every bundle it creates for the process lifetime.
+    private static func bundleIdentifier(at url: URL) -> String? {
+        let plist = url.appendingPathComponent("Contents/Info.plist")
+        guard let info = NSDictionary(contentsOf: plist) else { return nil }
+        return info["CFBundleIdentifier"] as? String
     }
 }
 
-// MARK: - Table and combo data
+// MARK: - Table
 
 extension SettingsWindowController: NSTableViewDataSource, NSTableViewDelegate {
     func numberOfRows(in tableView: NSTableView) -> Int {
         listedApps.count
     }
 
-    func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
+    func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
         guard let bundleID = listedApps[safe: row] else { return nil }
-        if let match = installedApps.first(where: { $0.bundleID == bundleID }) {
-            return "\(match.name)  —  \(bundleID)"
+        let identifier = NSUserInterfaceItemIdentifier("appCell")
+
+        let cell: NSTableCellView
+        if let reused = tableView.makeView(withIdentifier: identifier, owner: self) as? NSTableCellView {
+            cell = reused
+        } else {
+            cell = NSTableCellView()
+            cell.identifier = identifier
+
+            let image = NSImageView()
+            image.translatesAutoresizingMaskIntoConstraints = false
+            cell.addSubview(image)
+            cell.imageView = image
+
+            let text = NSTextField(labelWithString: "")
+            text.font = .systemFont(ofSize: 12)
+            text.lineBreakMode = .byTruncatingMiddle
+            text.translatesAutoresizingMaskIntoConstraints = false
+            cell.addSubview(text)
+            cell.textField = text
+
+            NSLayoutConstraint.activate([
+                image.leadingAnchor.constraint(equalTo: cell.leadingAnchor, constant: 4),
+                image.centerYAnchor.constraint(equalTo: cell.centerYAnchor),
+                image.widthAnchor.constraint(equalToConstant: 16),
+                image.heightAnchor.constraint(equalToConstant: 16),
+                text.leadingAnchor.constraint(equalTo: image.trailingAnchor, constant: 6),
+                text.trailingAnchor.constraint(equalTo: cell.trailingAnchor, constant: -4),
+                text.centerYAnchor.constraint(equalTo: cell.centerYAnchor)
+            ])
         }
-        return bundleID
-    }
-}
 
-extension SettingsWindowController: NSComboBoxDataSource {
-    func numberOfItems(in comboBox: NSComboBox) -> Int {
-        installedApps.count
-    }
-
-    func comboBox(_ comboBox: NSComboBox, objectValueForItemAt index: Int) -> Any? {
-        installedApps[safe: index]?.name
+        let details = entry(for: bundleID)
+        cell.imageView?.image = details.icon
+        cell.textField?.stringValue = details.name
+        cell.toolTip = bundleID
+        return cell
     }
 
-    func comboBox(_ comboBox: NSComboBox, indexOfItemWithStringValue string: String) -> UInt {
-        guard let index = installedApps.firstIndex(where: {
-            $0.name.localizedCaseInsensitiveCompare(string) == .orderedSame
-        }) else { return UInt(NSNotFound) }
-        return UInt(index)
-    }
-
-    func comboBox(_ comboBox: NSComboBox, completedString string: String) -> String? {
-        installedApps.first { $0.name.localizedCaseInsensitiveHasPrefix(string) }?.name
+    func tableViewSelectionDidChange(_ notification: Notification) {
+        removeButton.isEnabled = settings.appFilterMode != .allowAll && appTable.selectedRow >= 0
     }
 }
 
 private extension Array {
     subscript(safe index: Int) -> Element? {
         indices.contains(index) ? self[index] : nil
-    }
-}
-
-private extension String {
-    func localizedCaseInsensitiveHasPrefix(_ prefix: String) -> Bool {
-        range(of: prefix, options: [.caseInsensitive, .anchored]) != nil
     }
 }

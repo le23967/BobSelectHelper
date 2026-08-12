@@ -291,16 +291,40 @@ struct Localization {
             current == .english ? "Applications:" : "应用列表："
         }
 
-        static var addApplication: String {
-            current == .english ? "Add Application:" : "添加应用："
+        static var addTooltip: String {
+            current == .english ? "Choose an application…" : "选择应用…"
         }
 
-        static var add: String {
-            current == .english ? "Add" : "添加"
+        static var removeTooltip: String {
+            current == .english ? "Remove the selected application" : "移除选中的应用"
         }
 
-        static var remove: String {
-            current == .english ? "Remove" : "移除"
+        static var choosePanelPrompt: String {
+            current == .english ? "Choose" : "选择"
+        }
+
+        static var choosePanelMessage: String {
+            current == .english ?
+                "Pick one or more applications to add to the list." :
+                "选择一个或多个应用加入列表。"
+        }
+
+        static var emptyWhitelist: String {
+            current == .english ?
+                "No applications yet.\nThe helper will not appear anywhere until you add one." :
+                "列表为空。\n在添加应用之前，划词助手不会在任何应用中出现。"
+        }
+
+        static var emptyBlacklist: String {
+            current == .english ?
+                "No applications yet.\nClick + to pick the apps that should not trigger the helper." :
+                "列表为空。\n点击 + 选择不希望触发划词助手的应用。"
+        }
+
+        static var allowAllNotice: String {
+            current == .english ?
+                "The helper works in every application.\nSwitch to Whitelist or Blacklist to limit it." :
+                "划词助手在所有应用中都可用。\n切换到白名单或黑名单以进行限制。"
         }
     }
 

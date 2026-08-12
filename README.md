@@ -1,6 +1,17 @@
-# Bob Select Helper 0.6.1
+# Bob Select Helper 0.6.2
 
 A lightweight, independent macOS helper that recreates the useful part of Easydict's mouse-selection workflow and sends selected text to Bob.
+
+## What's new in 0.6.2
+
+- **Pick applications from Finder.** The Applications tab now uses a standard `+` / `-` pair.
+  `+` opens the normal macOS file picker at `/Applications`, so you choose apps by their
+  real icon and name instead of typing a name into a text field. Multiple selection works.
+- The list shows each app's **actual icon and display name**, resolved from the bundle
+  identifier, with the raw identifier kept only as a tooltip.
+- An empty list now explains what that means for the mode you are in.
+- Removed the background scan of every installed application; it existed only to feed the
+  old autocomplete.
 
 ## What's new in 0.6.1
 
@@ -158,15 +169,16 @@ Click the menu-bar icon to access settings. You can change:
 - Language (English / 简体中文)
 - **Application Filter Settings**: Control which applications can trigger the helper
 
-### Application Filter Modes
+### Application filter
 
-The Application Filter Settings window offers three modes:
+Under **Settings > Applications**:
 
-- **Allow All**: The helper works in all applications (default)
-- **Whitelist**: Only listed applications can use the helper
-- **Blacklist**: All applications except listed ones can use the helper
+- **Allow All** - the helper works everywhere (default)
+- **Whitelist** - only the listed applications can use it
+- **Blacklist** - every application except the listed ones can use it
 
-To access the settings, click "Application Filter Settings" in the menu bar menu.
+Click **+** to pick applications with the normal macOS file picker, and **-** to remove the
+selected ones. The list shows each app's own icon and name.
 
 ## First-run permissions
 

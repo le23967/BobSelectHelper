@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-VERSION="0.4.0"
+VERSION="0.5.0"
 RELEASE_DIR="$ROOT/releases"
 
 if ! command -v gh >/dev/null 2>&1; then
@@ -21,42 +21,58 @@ echo "Creating GitHub Release v$VERSION"
 echo "===================================="
 echo ""
 
-RELEASE_NOTES="Release v$VERSION
+RELEASE_NOTES="Release v$VERSION - Professional Icon & Improved Installation
 
-## Features
+## Major Improvements in v0.5.0
 
-- Application Filter Settings: Control which applications can use the helper
-  - Allow All (default)
-  - Whitelist mode
-  - Blacklist mode
-- Fully localized in English with support for other languages
-- Universal binary supporting both Intel and Apple Silicon Macs
+- ✨ **Professional Custom Icon** - Beautiful icon for Dock, Finder, and Launchpad
+- 🎯 **Fixed Installation** - Drag-and-drop to Applications now works perfectly
+- 🔧 **Improved DMG** - Better installer with clear setup instructions
+- 📱 **Universal Binary** - Optimized for both Intel and Apple Silicon
 
-## Downloads
+## Installation Instructions
 
-- **Intel (x86_64)**: Included in universal binary
-- **Apple Silicon (arm64)**: Included in universal binary
+### Using DMG (Recommended)
+1. Download Bob-Select-Helper-v0.5.0.dmg
+2. Double-click to open
+3. Drag 'Bob Select Helper' to Applications
+4. Launch from Applications
 
-## Installation
+### Using ZIP
+1. Download Bob-Select-Helper-v0.5.0.zip
+2. Extract the archive
+3. Move to Applications folder
+4. Launch from Applications
 
-1. Download either the DMG or ZIP file
-2. Open the DMG or extract the ZIP
-3. Drag Bob Select Helper to your Applications folder
-4. Launch it and grant Accessibility permissions when prompted
+## System Requirements
 
-## Requirements
-
-- macOS 11 or later
+- macOS 13 or later (Ventura or newer)
 - Bob 1.5.0 or later
+- Universal binary for Intel (x86_64) and Apple Silicon (arm64)
 
-## What's Changed
+## Key Features
 
-- Added application filter UI with easy add/remove interface
-- Updated all UI text to English (configurable for other languages)
-- Improved release packaging with universal binaries
-- Added SHA256 checksums for all release artifacts
+### Application Filter Settings
+- Allow All (default)
+- Whitelist mode - only selected apps
+- Blacklist mode - all except selected apps
 
-**Note**: This release includes a universal binary that runs natively on both Intel and Apple Silicon Macs. No separate downloads needed!
+### Complete English UI
+- Full English localization
+- Easy language switching
+- Intuitive interface
+
+### Universal Architecture Support
+✅ Intel (x86_64) - Full native support
+✅ Apple Silicon (arm64) - Full native support
+
+**Note**: This universal binary automatically optimizes for your Mac's processor!
+
+## Previous Features (v0.4.0)
+
+- Application filter with three modes
+- Complete English localization
+- SHA256 checksums for security
 "
 
 DMG_FILE="$RELEASE_DIR/Bob-Select-Helper-v$VERSION.dmg"

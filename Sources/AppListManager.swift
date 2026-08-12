@@ -1,7 +1,6 @@
 import AppKit
 
 class AppListManager: NSWindowController, NSTableViewDataSource, NSTableViewDelegate, NSComboBoxDataSource, NSComboBoxDelegate {
-    private let window: NSWindow
     private let tableView = NSTableView()
     private let comboBox = NSComboBox()
     private let scrollView = NSScrollView()
@@ -13,8 +12,8 @@ class AppListManager: NSWindowController, NSTableViewDataSource, NSTableViewDele
     private var allInstalledApps: [(name: String, bundleID: String)] = []
 
     override init(window: NSWindow? = nil) {
-        self.window = window ?? NSWindow()
-        super.init(window: self.window)
+        let windowToUse = window ?? NSWindow()
+        super.init(window: windowToUse)
         setupUI()
         loadInstalledApps()
     }
@@ -24,13 +23,14 @@ class AppListManager: NSWindowController, NSTableViewDataSource, NSTableViewDele
     }
 
     private func setupUI() {
-        window.title = "Application Filter Settings"
-        window.setContentSize(NSSize(width: 500, height: 450))
-        window.center()
-        window.styleMask = [.titled, .closable, .resizable]
+        guard let w = window else { return }
+        w.title = "Application Filter Settings"
+        w.setContentSize(NSSize(width: 500, height: 450))
+        w.center()
+        w.styleMask = [.titled, .closable, .resizable]
 
         let contentView = NSView()
-        window.contentView = contentView
+        w.contentView = contentView
 
         let modeLabel = NSTextField(labelWithString: "Filter Mode:")
         modeLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
@@ -88,7 +88,6 @@ class AppListManager: NSWindowController, NSTableViewDataSource, NSTableViewDele
         removeButton.action = #selector(removeApp(_:))
         contentView.addSubview(removeButton)
 
-        let layout = NSLayoutAnchor.self
         contentView.translatesAutoresizingMaskIntoConstraints = false
         modeLabel.translatesAutoresizingMaskIntoConstraints = false
         modeSegmentControl.translatesAutoresizingMaskIntoConstraints = false
@@ -254,7 +253,8 @@ class AppListManager: NSWindowController, NSTableViewDataSource, NSTableViewDele
     // MARK: - NSComboBoxDataSource
 
     func comboBox(_ comboBox: NSComboBox, indexOfItemWithStringValue string: String) -> Int {
-        return allInstalledApps.firstIndex(where: { $0.name.localizedCaseInsensitiveCompare(string) == .orderedSame })?.self ?? NSNotFound
+        guard let index = allInstalledApps.firstIndex(where: { $0.name.localizedCaseInsensitiveCompare(string) == .orderedSame }) else { return NSNotFound }
+        return index
     }
 
     func comboBox(_ comboBox: NSComboBox, completedString uncompletedString: String) -> String? {

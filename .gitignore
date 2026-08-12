@@ -2,6 +2,8 @@
 .swiftpm/
 build/
 .build/
+releases/
+.build-temp/
 *.xcodeproj/
 .xcworkspace/
 *.playground/

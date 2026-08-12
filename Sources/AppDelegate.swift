@@ -313,11 +313,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if showApprovalPrompt, bobAutoLaunchService.status == .requiresApproval {
                 NSApplication.shared.activate(ignoringOtherApps: true)
                 let alert = NSAlert()
-                alert.messageText = “Allow Auto-launch with Bob”
-                alert.informativeText = “macOS has registered Bob Select Helper Launcher, but you need to allow it to run in the background in System Settings > General > Login Items & Extensions. Bob Select Helper will automatically launch when you open Bob.”
+                alert.messageText = "Allow Auto-launch with Bob"
+                alert.informativeText = "macOS has registered Bob Select Helper Launcher, but you need to allow it to run in the background in System Settings > General > Login Items & Extensions. Bob Select Helper will automatically launch when you open Bob."
                 alert.alertStyle = .informational
-                alert.addButton(withTitle: “Open Login Items”)
-                alert.addButton(withTitle: “Later”)
+                alert.addButton(withTitle: "Open Login Items")
+                alert.addButton(withTitle: "Later")
                 if alert.runModal() == .alertFirstButtonReturn {
                     bobAutoLaunchService.openLoginItemsSettings()
                 }
@@ -330,10 +330,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func showWelcome() {
         NSApplication.shared.activate(ignoringOtherApps: true)
         let alert = NSAlert()
-        alert.messageText = “Bob Select Helper”
-        alert.informativeText = “After selecting text by dragging, double-clicking a word, or triple-clicking a paragraph, a Bob icon will appear next to your cursor.\n\nClick the menu bar icon to customize: hover or click trigger, Bob input box behavior, auto-launch with Bob, icon size, hover delay, position, and auto-hide duration.\n\nYou'll need to grant Accessibility permissions on first use. When macOS asks if Bob Select Helper may control Bob, please allow it.”
+        alert.messageText = "Bob Select Helper"
+        alert.informativeText = "After selecting text by dragging, double-clicking a word, or triple-clicking a paragraph, a Bob icon will appear next to your cursor.\n\nClick the menu bar icon to customize: hover or click trigger, Bob input box behavior, auto-launch with Bob, icon size, hover delay, position, and auto-hide duration.\n\nYou'll need to grant Accessibility permissions on first use. When macOS asks if Bob Select Helper may control Bob, please allow it."
         alert.alertStyle = .informational
-        alert.addButton(withTitle: “Got It”)
+        alert.addButton(withTitle: "Got It")
         alert.runModal()
     }
 
@@ -341,7 +341,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSSound.beep()
         NSApplication.shared.activate(ignoringOtherApps: true)
         let alert = NSAlert(error: error)
-        alert.informativeText += “\n\nPlease ensure Bob is installed and that Bob Select Helper has permission to control Bob in System Settings > Privacy & Security > Automation.”
+        alert.informativeText += "\n\nPlease ensure Bob is installed and that Bob Select Helper has permission to control Bob in System Settings > Privacy & Security > Automation."
         alert.runModal()
     }
 }

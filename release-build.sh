@@ -22,6 +22,19 @@ fi
 
 mkdir -p "$RELEASE_DIR" "$TEMP_BUILD"
 
+fix_quotes() {
+    python3 << 'PYTHON_EOF'
+import glob
+for filepath in glob.glob("Sources/*.swift") + glob.glob("LauncherSources/*.swift"):
+    with open(filepath, 'r', encoding='utf-8') as f:
+        content = f.read()
+    content = content.replace('"', '"').replace('"', '"')
+    content = content.replace(''', "'").replace(''', "'")
+    with open(filepath, 'w', encoding='utf-8') as f:
+        f.write(content)
+PYTHON_EOF
+}
+
 build_for_architecture() {
     local arch=$1
     local arch_build="$TEMP_BUILD/$arch"
@@ -38,10 +51,10 @@ build_for_architecture() {
     local arch_flag=""
     case $arch in
         arm64)
-            arch_flag="-target arm64-macos11"
+            arch_flag="-target arm64-macos13"
             ;;
         x86_64)
-            arch_flag="-target x86_64-macos11"
+            arch_flag="-target x86_64-macos13"
             ;;
     esac
 
@@ -200,6 +213,10 @@ cleanup() {
 }
 
 main() {
+    echo "Fixing quote characters in source files"
+    fix_quotes
+    echo ""
+
     build_for_architecture "arm64"
     build_for_architecture "x86_64"
     create_universal_binary

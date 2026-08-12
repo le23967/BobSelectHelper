@@ -27,7 +27,7 @@ A lightweight, independent macOS menu-bar helper that recreates the useful part 
 
 ## Requirements
 
-- macOS 11 or later (Intel or Apple Silicon)
+- macOS 13 or later (Intel or Apple Silicon)
 - Bob 1.5.0 or later
 - Apple command-line developer tools (for development only)
 

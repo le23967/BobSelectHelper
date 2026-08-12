@@ -21,39 +21,46 @@ echo "Creating GitHub Release v$VERSION"
 echo "===================================="
 echo ""
 
-RELEASE_NOTES="Bob Select Helper v0.5.3
+RELEASE_NOTES="Bob Select Helper v0.6.0
 
-Fixes the three things that were broken in 0.5.0 through 0.5.2.
+## You can hide the Dock icon now
 
-## The app icon now works
+Previous builds decided the Dock icon once at startup with no way to change it. There is
+now a **Show icon in the Dock** switch in Settings > General, and in the menu-bar menu.
+Turn it off and the Dock tile disappears straight away, no restart, and the app keeps
+running from the menu bar. The setting is remembered.
 
-Earlier builds shipped an \`.appiconset\`, which is an Xcode source format. It has to be
-compiled into an \`Assets.car\` to mean anything, so the bundle effectively had no icon and
-macOS fell back to the blank placeholder. The icon is now generated as a real \`.icns\` and
-referenced through \`CFBundleIconFile\`, so it shows in Finder, the Dock, and System Settings.
+## Opening the app makes sense now
 
-## The app now appears in the Dock
+Before, launching it dropped you into a bare list of application bundle IDs with no
+explanation. The window now opens on a proper Settings screen: what the app does, whether
+Accessibility is granted (with a button to fix it), and every option grouped under
+**General**, **Appearance**, **Bob** and **Applications**.
 
-Setting \`LSUIElement\` in Info.plist had no effect because the code called
-\`setActivationPolicy(.accessory)\`, which wins. The policy is now \`regular\`: the app has a
-Dock icon and an application menu, and clicking the Dock icon opens Application Filter
-Settings. The menu-bar icon is unchanged and still holds the full settings menu.
+Language is a normal setting too. Pick English or 简体中文 and the whole interface changes
+immediately.
 
-## Chinese now actually works
+## Lighter and more stable
 
-The localization file existed but nothing referenced it, so the UI stayed English. It is now
-wired into the menus and the settings window. Choose **Language > English / 简体中文** from
-the menu-bar icon; the choice is saved and applies immediately. First launch follows your
-macOS language.
+- Fixed a crash in the mouse-event monitor, which removed its own handler while that
+  handler was still running.
+- Drag events are only watched between mouse-down and mouse-up, not system-wide at all
+  times.
+- Scroll events return immediately when no icon is on screen; every tick used to do work.
+- Settings are read from memory instead of hitting UserDefaults on every mouse event.
+- The application list is scanned once, in the background, only when you open that tab.
+
+Measured on an M-series Mac: idle 0% CPU, and memory stays flat across repeated opening
+and closing of the settings window.
 
 ## Install
 
 1. Download the DMG
 2. Open it and drag **Bob Select Helper** onto **Applications**
-3. Launch it from Applications and grant Accessibility permission when asked
+3. Launch it and grant Accessibility permission when asked
 
-If you installed an earlier version, quit it first, then replace it. The old copy in
-\`/Applications\` keeps running until you quit it and will otherwise mask the new one.
+Quit any older copy first. A previous version left running in /Applications will keep
+running and mask the new one.
 
 ## Requirements
 

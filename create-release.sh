@@ -21,74 +21,43 @@ echo "Creating GitHub Release v$VERSION"
 echo "===================================="
 echo ""
 
-RELEASE_NOTES="Release v0.5.2 - Dock Visibility & Better Accessibility
+RELEASE_NOTES="Bob Select Helper v0.5.3
 
-## Major Improvements in v0.5.2
+Fixes the three things that were broken in 0.5.0 through 0.5.2.
 
-- 📦 **Now Shows in Dock** - Easy access alongside other apps
-- 🌐 **Chinese Localization** - Full support for Chinese (简体中文)
-- ✨ **Professional Icon** - Beautiful custom icon in Dock
-- 🎯 **Improved Installation** - Drag-and-drop to Applications works perfectly
-- 🔧 **Better DMG Layout** - Applications folder visible for easy installation
-- 📱 **Universal Binary** - Native support for Intel and Apple Silicon
+## The app icon now works
 
-## App Access
+Earlier builds shipped an \`.appiconset\`, which is an Xcode source format. It has to be
+compiled into an \`Assets.car\` to mean anything, so the bundle effectively had no icon and
+macOS fell back to the blank placeholder. The icon is now generated as a real \`.icns\` and
+referenced through \`CFBundleIconFile\`, so it shows in Finder, the Dock, and System Settings.
 
-### Now Visible in Dock
-- App icon shows in **Dock** for easy access
-- One-click to open settings
-- Can pin to Dock for quick access
-- Professional appearance alongside other apps
+## The app now appears in the Dock
 
-### Features
-- Works seamlessly with Bob
-- Simple AppleScript communication
-- No complex plugin dependencies
-- Easy to install and uninstall
+Setting \`LSUIElement\` in Info.plist had no effect because the code called
+\`setActivationPolicy(.accessory)\`, which wins. The policy is now \`regular\`: the app has a
+Dock icon and an application menu, and clicking the Dock icon opens Application Filter
+Settings. The menu-bar icon is unchanged and still holds the full settings menu.
 
-## Installation Instructions
+## Chinese now actually works
 
-### Using DMG (Recommended)
-1. Download Bob-Select-Helper-v0.5.0.dmg
-2. Double-click to open
-3. Drag 'Bob Select Helper' to Applications
-4. Launch from Applications
+The localization file existed but nothing referenced it, so the UI stayed English. It is now
+wired into the menus and the settings window. Choose **Language > English / 简体中文** from
+the menu-bar icon; the choice is saved and applies immediately. First launch follows your
+macOS language.
 
-### Using ZIP
-1. Download Bob-Select-Helper-v0.5.0.zip
-2. Extract the archive
-3. Move to Applications folder
-4. Launch from Applications
+## Install
 
-## System Requirements
+1. Download the DMG
+2. Open it and drag **Bob Select Helper** onto **Applications**
+3. Launch it from Applications and grant Accessibility permission when asked
 
-- macOS 13 or later (Ventura or newer)
-- Bob 1.5.0 or later
-- Universal binary for Intel (x86_64) and Apple Silicon (arm64)
+If you installed an earlier version, quit it first, then replace it. The old copy in
+\`/Applications\` keeps running until you quit it and will otherwise mask the new one.
 
-## Key Features
+## Requirements
 
-### Application Filter Settings
-- Allow All (default)
-- Whitelist mode - only selected apps
-- Blacklist mode - all except selected apps
-
-### Complete English UI
-- Full English localization
-- Easy language switching
-- Intuitive interface
-
-### Universal Architecture Support
-✅ Intel (x86_64) - Full native support
-✅ Apple Silicon (arm64) - Full native support
-
-**Note**: This universal binary automatically optimizes for your Mac's processor!
-
-## Previous Features (v0.4.0)
-
-- Application filter with three modes
-- Complete English localization
-- SHA256 checksums for security
+macOS 13 or later. Universal binary: Intel (x86_64) and Apple Silicon (arm64).
 "
 
 DMG_FILE="$RELEASE_DIR/Bob-Select-Helper-v$VERSION.dmg"

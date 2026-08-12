@@ -1,0 +1,8 @@
+.DS_Store
+.swiftpm/
+build/
+.build/
+*.xcodeproj/
+.xcworkspace/
+*.playground/
+.swiftlint.json

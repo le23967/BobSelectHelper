@@ -6,7 +6,7 @@ APP_NAME="Bob Select Helper"
 EXECUTABLE_NAME="BobSelectHelper"
 LAUNCHER_APP_NAME="Bob Select Helper Launcher"
 LAUNCHER_EXECUTABLE_NAME="BobSelectHelperLauncher"
-VERSION="0.5.2"
+VERSION="0.5.3"
 RELEASE_DIR="$ROOT/releases"
 BUILD_DIR="$ROOT/build"
 TEMP_BUILD="$ROOT/.build-temp"
@@ -21,19 +21,6 @@ if ! command -v xcrun >/dev/null 2>&1; then
 fi
 
 mkdir -p "$RELEASE_DIR" "$TEMP_BUILD"
-
-fix_quotes() {
-    python3 << 'PYTHON_EOF'
-import glob
-for filepath in glob.glob("Sources/*.swift") + glob.glob("LauncherSources/*.swift"):
-    with open(filepath, 'r', encoding='utf-8') as f:
-        content = f.read()
-    content = content.replace('"', '"').replace('"', '"')
-    content = content.replace(''', "'").replace(''', "'")
-    with open(filepath, 'w', encoding='utf-8') as f:
-        f.write(content)
-PYTHON_EOF
-}
 
 build_for_architecture() {
     local arch=$1
@@ -121,10 +108,11 @@ create_universal_binary() {
     cp "$ROOT/Resources/Info.plist" "$contents/Info.plist"
     cp "$ROOT/LauncherResources/Info.plist" "$launcher_contents/Info.plist"
 
-    # Copy icon set to resources
-    if [ -d "$ROOT/Resources/AppIcon.appiconset" ]; then
-        ditto "$ROOT/Resources/AppIcon.appiconset" "$resources_dir/AppIcon.appiconset"
+    # CFBundleIconFile needs a real .icns here; an .appiconset is Xcode-only source.
+    if [ ! -f "$ROOT/Resources/AppIcon.icns" ]; then
+        "$ROOT/make-icon.sh"
     fi
+    cp "$ROOT/Resources/AppIcon.icns" "$resources_dir/AppIcon.icns"
 
     chmod +x "$macos_dir/$EXECUTABLE_NAME"
     chmod +x "$launcher_macos_dir/$LAUNCHER_EXECUTABLE_NAME"
@@ -231,7 +219,7 @@ verify_universal_binary() {
     local app_dir="$BUILD_DIR/$APP_NAME.app"
     local executable="$app_dir/Contents/MacOS/$EXECUTABLE_NAME"
 
-    if lipo -info "$executable" | grep -q "arm64.*x86_64"; then
+    if lipo -info "$executable" | grep -q arm64 && lipo -info "$executable" | grep -q x86_64; then
         echo "  ✓ Valid universal binary detected"
         lipo -info "$executable"
     else
@@ -250,10 +238,6 @@ cleanup() {
 }
 
 main() {
-    echo "Fixing quote characters in source files"
-    fix_quotes
-    echo ""
-
     build_for_architecture "arm64"
     build_for_architecture "x86_64"
     create_universal_binary

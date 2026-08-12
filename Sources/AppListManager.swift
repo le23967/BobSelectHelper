@@ -7,6 +7,10 @@ class AppListManager: NSWindowController, NSTableViewDataSource, NSTableViewDele
     private let addButton = NSButton()
     private let removeButton = NSButton()
     private let modeSegmentControl = NSSegmentedControl()
+    private let modeLabel = NSTextField(labelWithString: "")
+    private let infoLabel = NSTextField(labelWithString: "")
+    private let listLabel = NSTextField(labelWithString: "")
+    private let addLabel = NSTextField(labelWithString: "")
     private var currentApps: [String] = []
     private let settings = Settings.shared
     private var allInstalledApps: [(name: String, bundleID: String)] = []
@@ -24,7 +28,7 @@ class AppListManager: NSWindowController, NSTableViewDataSource, NSTableViewDele
 
     private func setupUI() {
         guard let w = window else { return }
-        w.title = "Application Filter Settings"
+        w.title = Localization.Filter.windowTitle
         w.setContentSize(NSSize(width: 500, height: 450))
         w.center()
         w.styleMask = [.titled, .closable, .resizable]
@@ -32,27 +36,27 @@ class AppListManager: NSWindowController, NSTableViewDataSource, NSTableViewDele
         let contentView = NSView()
         w.contentView = contentView
 
-        let modeLabel = NSTextField(labelWithString: "Filter Mode:")
+        modeLabel.stringValue = Localization.Filter.filterMode
         modeLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
         contentView.addSubview(modeLabel)
 
         modeSegmentControl.segmentCount = 3
-        modeSegmentControl.setLabel("Allow All", forSegment: 0)
-        modeSegmentControl.setLabel("Whitelist", forSegment: 1)
-        modeSegmentControl.setLabel("Blacklist", forSegment: 2)
+        modeSegmentControl.setLabel(Localization.Filter.allowAll, forSegment: 0)
+        modeSegmentControl.setLabel(Localization.Filter.whitelist, forSegment: 1)
+        modeSegmentControl.setLabel(Localization.Filter.blacklist, forSegment: 2)
         modeSegmentControl.selectedSegment = settings.appFilterMode == .allowAll ? 0 : (settings.appFilterMode == .whitelist ? 1 : 2)
         modeSegmentControl.target = self
         modeSegmentControl.action = #selector(filterModeChanged(_:))
         contentView.addSubview(modeSegmentControl)
 
-        let infoLabel = NSTextField(labelWithString: "Whitelist: Only listed apps can use this helper\nBlacklist: All apps except listed ones can use this helper")
+        infoLabel.stringValue = Localization.Filter.explanation
         infoLabel.isEditable = false
         infoLabel.isSelectable = false
         infoLabel.font = NSFont.systemFont(ofSize: 11)
         infoLabel.textColor = .gray
         contentView.addSubview(infoLabel)
 
-        let listLabel = NSTextField(labelWithString: "Applications:")
+        listLabel.stringValue = Localization.Filter.applications
         listLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
         contentView.addSubview(listLabel)
 
@@ -68,7 +72,7 @@ class AppListManager: NSWindowController, NSTableViewDataSource, NSTableViewDele
         scrollView.hasVerticalScroller = true
         contentView.addSubview(scrollView)
 
-        let addLabel = NSTextField(labelWithString: "Add Application:")
+        addLabel.stringValue = Localization.Filter.addApplication
         addLabel.font = NSFont.systemFont(ofSize: 13, weight: .semibold)
         contentView.addSubview(addLabel)
 
@@ -78,12 +82,12 @@ class AppListManager: NSWindowController, NSTableViewDataSource, NSTableViewDele
         comboBox.completes = true
         contentView.addSubview(comboBox)
 
-        addButton.title = "Add"
+        addButton.title = Localization.Filter.add
         addButton.target = self
         addButton.action = #selector(addApp(_:))
         contentView.addSubview(addButton)
 
-        removeButton.title = "Remove"
+        removeButton.title = Localization.Filter.remove
         removeButton.target = self
         removeButton.action = #selector(removeApp(_:))
         contentView.addSubview(removeButton)
@@ -137,6 +141,20 @@ class AppListManager: NSWindowController, NSTableViewDataSource, NSTableViewDele
         ])
 
         loadCurrentApps()
+    }
+
+    /// Re-applies every visible string after the user switches language.
+    func reloadLocalizedText() {
+        window?.title = Localization.Filter.windowTitle
+        modeLabel.stringValue = Localization.Filter.filterMode
+        infoLabel.stringValue = Localization.Filter.explanation
+        listLabel.stringValue = Localization.Filter.applications
+        addLabel.stringValue = Localization.Filter.addApplication
+        modeSegmentControl.setLabel(Localization.Filter.allowAll, forSegment: 0)
+        modeSegmentControl.setLabel(Localization.Filter.whitelist, forSegment: 1)
+        modeSegmentControl.setLabel(Localization.Filter.blacklist, forSegment: 2)
+        addButton.title = Localization.Filter.add
+        removeButton.title = Localization.Filter.remove
     }
 
     private func loadInstalledApps() {

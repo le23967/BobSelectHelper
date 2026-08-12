@@ -41,6 +41,7 @@ final class Settings {
         static let appFilterMode = "appFilterMode"
         static let whitelistedApps = "whitelistedApps"
         static let blacklistedApps = "blacklistedApps"
+        static let language = "language"
     }
 
     private let defaults = UserDefaults.standard
@@ -120,6 +121,19 @@ final class Settings {
     var didConfigureBobAutoLaunch: Bool {
         get { defaults.bool(forKey: Key.didConfigureBobAutoLaunch) }
         set { defaults.set(newValue, forKey: Key.didConfigureBobAutoLaunch) }
+    }
+
+    /// Defaults to the system language on first launch, then follows the user's choice.
+    var language: Localization.Language {
+        get {
+            if let raw = defaults.string(forKey: Key.language),
+               let stored = Localization.Language(rawValue: raw) {
+                return stored
+            }
+            let preferred = Locale.preferredLanguages.first ?? "en"
+            return preferred.hasPrefix("zh") ? .chinese : .english
+        }
+        set { defaults.set(newValue.rawValue, forKey: Key.language) }
     }
 
     var appFilterMode: AppFilterMode {

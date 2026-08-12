@@ -6,7 +6,7 @@ struct Localization {
         case chinese = "zh"
     }
 
-    static var current = Language.english
+    static var current: Language { Settings.shared.language }
 
     struct Menu {
         static var enableHelper: String {
@@ -167,6 +167,58 @@ struct Localization {
 
         static var quitHelper: String {
             current == .english ? "Quit Bob Select Helper" : "退出 Bob Select Helper"
+        }
+
+        static var language: String {
+            current == .english ? "Language" : "语言"
+        }
+
+        static var languageEnglish: String { "English" }
+
+        static var languageChinese: String { "简体中文" }
+    }
+
+    struct Filter {
+        static var windowTitle: String {
+            current == .english ? "Application Filter Settings" : "应用过滤设置"
+        }
+
+        static var filterMode: String {
+            current == .english ? "Filter Mode:" : "过滤模式："
+        }
+
+        static var allowAll: String {
+            current == .english ? "Allow All" : "全部允许"
+        }
+
+        static var whitelist: String {
+            current == .english ? "Whitelist" : "白名单"
+        }
+
+        static var blacklist: String {
+            current == .english ? "Blacklist" : "黑名单"
+        }
+
+        static var explanation: String {
+            current == .english ?
+                "Whitelist: only the listed apps may use this helper\nBlacklist: every app except the listed ones may use this helper" :
+                "白名单：仅列表中的应用可以使用划词助手\n黑名单：除列表中的应用外，其他应用均可使用划词助手"
+        }
+
+        static var applications: String {
+            current == .english ? "Applications:" : "应用列表："
+        }
+
+        static var addApplication: String {
+            current == .english ? "Add Application:" : "添加应用："
+        }
+
+        static var add: String {
+            current == .english ? "Add" : "添加"
+        }
+
+        static var remove: String {
+            current == .english ? "Remove" : "移除"
         }
     }
 

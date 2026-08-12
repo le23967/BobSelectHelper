@@ -8,6 +8,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var appListManager: AppListManager?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        setupApplicationMenu()
         setupStatusItem()
 
         selectionController = SelectionController()
@@ -31,6 +32,43 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         }
     }
 
+    /// A .regular app owns the menu bar, so it needs a real application menu.
+    private func setupApplicationMenu() {
+        let appMenu = NSMenu()
+        appMenu.addItem(
+            withTitle: Localization.Menu.applicationFilterSettings,
+            action: #selector(openAppListManager),
+            keyEquivalent: ","
+        ).target = self
+        appMenu.addItem(.separator())
+        appMenu.addItem(
+            withTitle: Localization.Menu.instructions,
+            action: #selector(showWelcomeFromMenu),
+            keyEquivalent: ""
+        ).target = self
+        appMenu.addItem(.separator())
+        appMenu.addItem(
+            withTitle: Localization.Menu.quitHelper,
+            action: #selector(quitApp),
+            keyEquivalent: "q"
+        ).target = self
+
+        let appMenuItem = NSMenuItem()
+        appMenuItem.submenu = appMenu
+
+        let mainMenu = NSMenu()
+        mainMenu.addItem(appMenuItem)
+        NSApplication.shared.mainMenu = mainMenu
+    }
+
+    /// Clicking the Dock icon has no window to restore, so open settings instead.
+    func applicationShouldHandleReopen(_ sender: NSApplication, hasVisibleWindows: Bool) -> Bool {
+        if !hasVisibleWindows {
+            openAppListManager()
+        }
+        return true
+    }
+
     private func setupStatusItem() {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.squareLength)
         statusItem.button?.image = NSImage(
@@ -47,7 +85,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        let enabled = NSMenuItem(title: "Enable Helper", action: #selector(toggleEnabled), keyEquivalent: "")
+        let enabled = NSMenuItem(title: Localization.Menu.enableHelper, action: #selector(toggleEnabled), keyEquivalent: "")
         enabled.target = self
         enabled.state = settings.isEnabled ? .on : .off
         menu.addItem(enabled)
@@ -55,65 +93,65 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(.separator())
 
         let triggerMenu = NSMenu()
-        let hover = NSMenuItem(title: "Translate on Hover", action: #selector(useHoverMode), keyEquivalent: "")
+        let hover = NSMenuItem(title: Localization.Menu.translateOnHover, action: #selector(useHoverMode), keyEquivalent: "")
         hover.target = self
         hover.state = settings.activationMode == .hover ? .on : .off
         triggerMenu.addItem(hover)
 
-        let click = NSMenuItem(title: "Translate on Click", action: #selector(useClickMode), keyEquivalent: "")
+        let click = NSMenuItem(title: Localization.Menu.translateOnClick, action: #selector(useClickMode), keyEquivalent: "")
         click.target = self
         click.state = settings.activationMode == .click ? .on : .off
         triggerMenu.addItem(click)
 
-        let triggerItem = NSMenuItem(title: "Trigger Method", action: nil, keyEquivalent: "")
+        let triggerItem = NSMenuItem(title: Localization.Menu.triggerMethod, action: nil, keyEquivalent: "")
         triggerItem.submenu = triggerMenu
         menu.addItem(triggerItem)
 
         let inputBoxMenu = NSMenu()
-        addInputBoxStateItem("Always Expand Input Box", value: .alwaysUnfold, to: inputBoxMenu)
-        addInputBoxStateItem("Follow Bob's State", value: .last, to: inputBoxMenu)
-        addInputBoxStateItem("Always Collapse Input Box", value: .alwaysFold, to: inputBoxMenu)
-        let inputBoxItem = NSMenuItem(title: "Bob Input Box", action: nil, keyEquivalent: "")
+        addInputBoxStateItem(Localization.Menu.alwaysExpandInputBox, value: .alwaysUnfold, to: inputBoxMenu)
+        addInputBoxStateItem(Localization.Menu.followBobState, value: .last, to: inputBoxMenu)
+        addInputBoxStateItem(Localization.Menu.alwaysCollapseInputBox, value: .alwaysFold, to: inputBoxMenu)
+        let inputBoxItem = NSMenuItem(title: Localization.Menu.bobInputBox, action: nil, keyEquivalent: "")
         inputBoxItem.submenu = inputBoxMenu
         menu.addItem(inputBoxItem)
 
         let delayMenu = NSMenu()
-        addDelayItem("Immediate", value: 0.0, to: delayMenu)
-        addDelayItem("Fast (0.12s)", value: 0.12, to: delayMenu)
-        addDelayItem("Balanced (0.22s)", value: 0.22, to: delayMenu)
-        addDelayItem("Slow (0.40s)", value: 0.40, to: delayMenu)
-        addDelayItem("Very Slow (0.70s)", value: 0.70, to: delayMenu)
-        let delayItem = NSMenuItem(title: "Hover Delay", action: nil, keyEquivalent: "")
+        addDelayItem(Localization.Menu.immediate, value: 0.0, to: delayMenu)
+        addDelayItem(Localization.Menu.fast, value: 0.12, to: delayMenu)
+        addDelayItem(Localization.Menu.balanced, value: 0.22, to: delayMenu)
+        addDelayItem(Localization.Menu.slow, value: 0.40, to: delayMenu)
+        addDelayItem(Localization.Menu.verySlow, value: 0.70, to: delayMenu)
+        let delayItem = NSMenuItem(title: Localization.Menu.hoverDelay, action: nil, keyEquivalent: "")
         delayItem.submenu = delayMenu
         delayItem.isEnabled = settings.activationMode == .hover
         menu.addItem(delayItem)
 
         let sizeMenu = NSMenu()
-        addSizeItem("Small (26px)", value: 26, to: sizeMenu)
-        addSizeItem("Smaller (30px)", value: 30, to: sizeMenu)
-        addSizeItem("Default (34px)", value: 34, to: sizeMenu)
-        addSizeItem("Larger (40px)", value: 40, to: sizeMenu)
-        addSizeItem("Large (48px)", value: 48, to: sizeMenu)
-        addSizeItem("Extra Large (56px)", value: 56, to: sizeMenu)
-        let sizeItem = NSMenuItem(title: "Icon Size", action: nil, keyEquivalent: "")
+        addSizeItem(Localization.Menu.small, value: 26, to: sizeMenu)
+        addSizeItem(Localization.Menu.smaller, value: 30, to: sizeMenu)
+        addSizeItem(Localization.Menu.default, value: 34, to: sizeMenu)
+        addSizeItem(Localization.Menu.larger, value: 40, to: sizeMenu)
+        addSizeItem(Localization.Menu.large, value: 48, to: sizeMenu)
+        addSizeItem(Localization.Menu.extraLarge, value: 56, to: sizeMenu)
+        let sizeItem = NSMenuItem(title: Localization.Menu.iconSize, action: nil, keyEquivalent: "")
         sizeItem.submenu = sizeMenu
         menu.addItem(sizeItem)
 
         let positionMenu = NSMenu()
-        addPositionItem("Bottom Right", value: .belowRight, to: positionMenu)
-        addPositionItem("Top Right", value: .aboveRight, to: positionMenu)
-        addPositionItem("Bottom Left", value: .belowLeft, to: positionMenu)
-        addPositionItem("Top Left", value: .aboveLeft, to: positionMenu)
-        let positionItem = NSMenuItem(title: "Icon Position", action: nil, keyEquivalent: "")
+        addPositionItem(Localization.Menu.bottomRight, value: .belowRight, to: positionMenu)
+        addPositionItem(Localization.Menu.topRight, value: .aboveRight, to: positionMenu)
+        addPositionItem(Localization.Menu.bottomLeft, value: .belowLeft, to: positionMenu)
+        addPositionItem(Localization.Menu.topLeft, value: .aboveLeft, to: positionMenu)
+        let positionItem = NSMenuItem(title: Localization.Menu.iconPosition, action: nil, keyEquivalent: "")
         positionItem.submenu = positionMenu
         menu.addItem(positionItem)
 
         let hideMenu = NSMenu()
-        addAutoHideItem("2 seconds", value: 2, to: hideMenu)
-        addAutoHideItem("5 seconds", value: 5, to: hideMenu)
-        addAutoHideItem("10 seconds", value: 10, to: hideMenu)
-        addAutoHideItem("Never Auto-hide", value: 0, to: hideMenu)
-        let hideItem = NSMenuItem(title: "Auto-hide Duration", action: nil, keyEquivalent: "")
+        addAutoHideItem(Localization.Menu.twoSeconds, value: 2, to: hideMenu)
+        addAutoHideItem(Localization.Menu.fiveSeconds, value: 5, to: hideMenu)
+        addAutoHideItem(Localization.Menu.tenSeconds, value: 10, to: hideMenu)
+        addAutoHideItem(Localization.Menu.neverAutoHide, value: 0, to: hideMenu)
+        let hideItem = NSMenuItem(title: Localization.Menu.autoHideDuration, action: nil, keyEquivalent: "")
         hideItem.submenu = hideMenu
         menu.addItem(hideItem)
 
@@ -123,9 +161,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         let autoLaunchTitle: String
         switch autoLaunchStatus {
         case .requiresApproval:
-            autoLaunchTitle = "Auto-launch with Bob (Pending Approval)"
+            autoLaunchTitle = Localization.Menu.autoLaunchPendingApproval
         default:
-            autoLaunchTitle = "Auto-launch with Bob"
+            autoLaunchTitle = Localization.Menu.autoLaunchWithBob
         }
 
         let autoLaunch = NSMenuItem(title: autoLaunchTitle, action: #selector(toggleBobAutoLaunch), keyEquivalent: "")
@@ -143,35 +181,42 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         menu.addItem(autoLaunch)
 
         if autoLaunchStatus == .requiresApproval {
-            let loginItems = NSMenuItem(title: "Open Login Items and Allow", action: #selector(openLoginItemsSettings), keyEquivalent: "")
+            let loginItems = NSMenuItem(title: Localization.Menu.openLoginItems, action: #selector(openLoginItemsSettings), keyEquivalent: "")
             loginItems.target = self
             menu.addItem(loginItems)
         }
 
-        let fallback = NSMenuItem(title: "Use Command-C Fallback", action: #selector(toggleCopyFallback), keyEquivalent: "")
+        let fallback = NSMenuItem(title: Localization.Menu.useCopyFallback, action: #selector(toggleCopyFallback), keyEquivalent: "")
         fallback.target = self
         fallback.state = settings.copyFallbackEnabled ? .on : .off
         menu.addItem(fallback)
 
-        let appFilter = NSMenuItem(title: "Application Filter Settings", action: #selector(openAppListManager), keyEquivalent: "")
+        let appFilter = NSMenuItem(title: Localization.Menu.applicationFilterSettings, action: #selector(openAppListManager), keyEquivalent: "")
         appFilter.target = self
         menu.addItem(appFilter)
 
-        let permission = NSMenuItem(title: "Open Accessibility Permissions", action: #selector(requestAccessibility), keyEquivalent: "")
+        let permission = NSMenuItem(title: Localization.Menu.openAccessibilityPermissions, action: #selector(requestAccessibility), keyEquivalent: "")
         permission.target = self
         menu.addItem(permission)
 
-        let test = NSMenuItem(title: "Test Bob Connection", action: #selector(testBob), keyEquivalent: "")
+        let test = NSMenuItem(title: Localization.Menu.testBobConnection, action: #selector(testBob), keyEquivalent: "")
         test.target = self
         menu.addItem(test)
 
+        let languageMenu = NSMenu()
+        addLanguageItem(Localization.Menu.languageEnglish, value: .english, to: languageMenu)
+        addLanguageItem(Localization.Menu.languageChinese, value: .chinese, to: languageMenu)
+        let languageItem = NSMenuItem(title: Localization.Menu.language, action: nil, keyEquivalent: "")
+        languageItem.submenu = languageMenu
+        menu.addItem(languageItem)
+
         menu.addItem(.separator())
 
-        let about = NSMenuItem(title: "Instructions", action: #selector(showWelcomeFromMenu), keyEquivalent: "")
+        let about = NSMenuItem(title: Localization.Menu.instructions, action: #selector(showWelcomeFromMenu), keyEquivalent: "")
         about.target = self
         menu.addItem(about)
 
-        let quit = NSMenuItem(title: "Quit Bob Select Helper", action: #selector(quitApp), keyEquivalent: "q")
+        let quit = NSMenuItem(title: Localization.Menu.quitHelper, action: #selector(quitApp), keyEquivalent: "q")
         quit.target = self
         menu.addItem(quit)
     }
@@ -214,6 +259,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         item.representedObject = value.rawValue
         item.state = settings.inputBoxState == value ? .on : .off
         menu.addItem(item)
+    }
+
+    private func addLanguageItem(_ title: String, value: Localization.Language, to menu: NSMenu) {
+        let item = NSMenuItem(title: title, action: #selector(setLanguage(_:)), keyEquivalent: "")
+        item.target = self
+        item.representedObject = value.rawValue
+        item.state = settings.language == value ? .on : .off
+        menu.addItem(item)
+    }
+
+    @objc private func setLanguage(_ sender: NSMenuItem) {
+        guard let raw = sender.representedObject as? String,
+              let language = Localization.Language(rawValue: raw)
+        else { return }
+        settings.language = language
+        // The status menu rebuilds on open; the app menu and any open window do not.
+        setupApplicationMenu()
+        appListManager?.reloadLocalizedText()
     }
 
     @objc private func toggleEnabled() {
@@ -313,11 +376,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             if showApprovalPrompt, bobAutoLaunchService.status == .requiresApproval {
                 NSApplication.shared.activate(ignoringOtherApps: true)
                 let alert = NSAlert()
-                alert.messageText = "Allow Auto-launch with Bob"
-                alert.informativeText = "macOS has registered Bob Select Helper Launcher, but you need to allow it to run in the background in System Settings > General > Login Items & Extensions. Bob Select Helper will automatically launch when you open Bob."
+                alert.messageText = Localization.Dialog.allowAutolaunchTitle
+                alert.informativeText = Localization.Dialog.allowAutolaunchMessage
                 alert.alertStyle = .informational
-                alert.addButton(withTitle: "Open Login Items")
-                alert.addButton(withTitle: "Later")
+                alert.addButton(withTitle: Localization.Menu.openLoginItems)
+                alert.addButton(withTitle: Localization.Dialog.later)
                 if alert.runModal() == .alertFirstButtonReturn {
                     bobAutoLaunchService.openLoginItemsSettings()
                 }
@@ -330,10 +393,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func showWelcome() {
         NSApplication.shared.activate(ignoringOtherApps: true)
         let alert = NSAlert()
-        alert.messageText = "Bob Select Helper"
-        alert.informativeText = "After selecting text by dragging, double-clicking a word, or triple-clicking a paragraph, a Bob icon will appear next to your cursor.\n\nClick the menu bar icon to customize: hover or click trigger, Bob input box behavior, auto-launch with Bob, icon size, hover delay, position, and auto-hide duration.\n\nYou'll need to grant Accessibility permissions on first use. When macOS asks if Bob Select Helper may control Bob, please allow it."
+        alert.messageText = Localization.Dialog.welcomeTitle
+        alert.informativeText = Localization.Dialog.welcomeMessage
         alert.alertStyle = .informational
-        alert.addButton(withTitle: "Got It")
+        alert.addButton(withTitle: Localization.Dialog.gotIt)
         alert.runModal()
     }
 
@@ -341,7 +404,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         NSSound.beep()
         NSApplication.shared.activate(ignoringOtherApps: true)
         let alert = NSAlert(error: error)
-        alert.informativeText += "\n\nPlease ensure Bob is installed and that Bob Select Helper has permission to control Bob in System Settings > Privacy & Security > Automation."
+        alert.informativeText += Localization.Dialog.errorSuffix
         alert.runModal()
     }
 }

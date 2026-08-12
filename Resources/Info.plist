@@ -2,33 +2,33 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleDevelopmentRegion</key>
-    <string>en</string>
-    <key>CFBundleDisplayName</key>
-    <string>Bob Select Helper</string>
-    <key>CFBundleExecutable</key>
-    <string>BobSelectHelper</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.bryannelson.BobSelectHelper</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleName</key>
-    <string>Bob Select Helper</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>0.5.2</string>
-    <key>CFBundleVersion</key>
-    <string>7</string>
-    <key>CFBundleIconName</key>
-    <string>AppIcon</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>13.0</string>
-    <key>LSUIElement</key>
-    <false/>
-    <key>NSAppleEventsUsageDescription</key>
-    <string>Bob Select Helper sends selected text to Bob for translation.</string>
-    <key>NSHumanReadableCopyright</key>
-    <string>Copyright 2026. Independent helper for personal use.</string>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>Bob Select Helper</string>
+	<key>CFBundleExecutable</key>
+	<string>BobSelectHelper</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.bryannelson.BobSelectHelper</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>Bob Select Helper</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>0.5.3</string>
+	<key>CFBundleVersion</key>
+	<string>8</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>LSUIElement</key>
+	<false/>
+	<key>NSAppleEventsUsageDescription</key>
+	<string>Bob Select Helper sends selected text to Bob for translation.</string>
+	<key>NSHumanReadableCopyright</key>
+	<string>Copyright 2026. Independent helper for personal use.</string>
 </dict>
 </plist>

@@ -1,10 +1,19 @@
-# Bob Select Helper 0.4.0
+# Bob Select Helper 0.5.3
 
-A lightweight, independent macOS menu-bar helper that recreates the useful part of Easydict's mouse-selection workflow and sends selected text to Bob.
+A lightweight, independent macOS helper that recreates the useful part of Easydict's mouse-selection workflow and sends selected text to Bob.
+
+## What's new in 0.5.3
+
+- **Custom app icon** - a real `.icns` is now built and bundled, so the icon shows in
+  Finder, the Dock, and System Settings
+- **Shows in the Dock** - the activation policy is `regular`, so the app has a Dock icon
+  and an application menu alongside its menu-bar icon
+- **Language switching in the app** - pick English or 简体中文 from the menu; the choice is
+  saved and applies immediately, with no rebuild
+- Clicking the Dock icon opens Application Filter Settings
 
 ## What's new in 0.4.0
 
-- **English UI by default** - Fully translated interface with support for other languages
 - **Application Filter Settings** - Control which applications can use the helper:
   - Allow All (default) - Works in all applications
   - Whitelist mode - Only listed apps can trigger the helper
@@ -78,6 +87,14 @@ This creates DMG and ZIP releases in the `releases/` directory with:
 - Code signing
 - SHA256 checksums
 
+The app icon is generated from `Tools/GenerateIcon.swift`. `release-build.sh` builds
+`Resources/AppIcon.icns` automatically if it is missing; to redraw it after editing the
+generator, run:
+
+```bash
+./make-icon.sh
+```
+
 To publish to GitHub:
 
 ```bash
@@ -86,37 +103,24 @@ To publish to GitHub:
 
 This requires GitHub CLI to be installed and authenticated.
 
-## Menu Bar App
+## Where to find the app
 
-**Important:** Bob Select Helper is a menu bar app, not a Dock app.
+Bob Select Helper is reachable in two places:
 
-- The app runs silently in the background
-- Look for the icon in the **top-right menu bar** (next to system clock)
-- The app does **not** appear in the Dock
-- Click the menu bar icon to access settings
+- **Dock** - the app has a normal Dock icon. Clicking it opens Application Filter Settings.
+- **Menu bar** - the `character.bubble` icon in the top-right holds the full settings menu.
 
-## Language Support
+## Language
 
-Bob Select Helper supports both **English** and **Chinese (简体中文)**.
+English and 简体中文 are both built in. Switch from the menu-bar icon under **Language**.
+The choice is saved and takes effect straight away.
 
-To change the language, modify `Sources/Localization.swift`:
-```swift
-// Change this line:
-Localization.current = .english  // Switch to .chinese
-```
+On first launch the app follows your macOS language: a system language starting with `zh`
+selects Chinese, anything else selects English.
 
-Then rebuild the app:
-```bash
-./release-build.sh
-```
+## Settings
 
-Available languages:
-- **English** (.english)
-- **Chinese Simplified** (.chinese)
-
-## Menu-bar Settings
-
-Click the icon in the **top-right menu bar** to access settings. You can change:
+Click the menu-bar icon to access settings. You can change:
 
 - Open Bob -> automatically start Bob Select Helper
 - Bob input box: always unfold, follow current state, or always fold
@@ -125,6 +129,7 @@ Click the icon in the **top-right menu bar** to access settings. You can change:
 - Floating icon size and position
 - Auto-hide duration
 - Command-C fallback
+- Language (English / 简体中文)
 - **Application Filter Settings**: Control which applications can trigger the helper
 
 ### Application Filter Modes

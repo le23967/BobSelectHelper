@@ -235,8 +235,8 @@ struct Localization {
 
         static var showInDockHint: String {
             current == .english ?
-                "Turn this off to run from the menu bar only. The menu-bar icon stays either way." :
-                "关闭后仅在菜单栏运行。无论如何菜单栏图标都会保留。"
+                "Off by default: a Dock icon means the app takes focus when activated. The menu-bar icon is always there." :
+                "默认关闭：显示程序坞图标后，激活应用时会抢占焦点。菜单栏图标始终保留。"
         }
 
         static var hoverDelayLabel: String {

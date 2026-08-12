@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-VERSION="0.6.0"
+VERSION="0.6.1"
 RELEASE_DIR="$ROOT/releases"
 
 if ! command -v gh >/dev/null 2>&1; then

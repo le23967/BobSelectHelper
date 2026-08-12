@@ -72,7 +72,10 @@ final class Settings {
 
         cachedIsEnabled = defaults.object(forKey: Key.enabled) as? Bool ?? true
         cachedCopyFallback = defaults.object(forKey: Key.copyFallback) as? Bool ?? true
-        cachedShowInDock = defaults.object(forKey: Key.showInDock) as? Bool ?? true
+        // Menu-bar only by default. A .regular app takes focus and replaces the
+        // frontmost app's menu bar when it activates, which works against a tool whose
+        // whole job is acting on a selection made in another app.
+        cachedShowInDock = defaults.object(forKey: Key.showInDock) as? Bool ?? false
 
         cachedActivationMode = ActivationMode(
             rawValue: defaults.string(forKey: Key.activationMode) ?? ""

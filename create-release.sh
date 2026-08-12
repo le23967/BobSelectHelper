@@ -21,32 +21,32 @@ echo "Creating GitHub Release v$VERSION"
 echo "===================================="
 echo ""
 
-RELEASE_NOTES="Bob Select Helper v0.6.1
+RELEASE_NOTES="Bob Select Helper v0.6.2
 
-## Menu-bar only by default
+## Picking applications now works like the rest of macOS
 
-A Dock icon means the app takes focus when it activates, and its menu bar replaces the one
-belonging to whatever app you were just in. For a tool whose entire job is acting on text
-you selected somewhere else, that gets in the way. It also costs a permanent Dock slot and
-a Cmd-Tab entry for something you open only to change a setting.
+Adding an app to the whitelist or blacklist used to mean typing its name into a text field,
+with no icons and nothing to confirm you had picked the right thing.
 
-So a fresh install now runs from the menu bar alone. If you want a Dock icon, the switch is
-still there under **Show icon in the Dock**, in Settings > General or in the menu-bar menu,
-and it takes effect immediately. If you already set a preference in 0.6.0, it is kept.
+The Applications tab now has the standard **+** and **-** buttons. **+** opens the normal
+macOS file picker at /Applications, so you choose apps by their icon and name, and you can
+select several at once. The list shows each app's real icon and display name. **-** removes
+whatever you have selected.
 
-Settings is reachable either way: from the menu-bar icon, or by launching the app again
-from Applications.
+An empty list also tells you what that means: an empty whitelist blocks the helper
+everywhere, which is easy to do by accident.
 
-## Everything from 0.6.0
+## Also in 0.6.x
 
-- A real Settings window: what the app does, whether Accessibility is granted, and every
-  option grouped under General / Appearance / Bob / Applications
-- English and 简体中文, switchable in the app, following your macOS language on first launch
-- Fixed a crash in the mouse-event monitor, which removed its own handler mid-callback
-- Drag events watched only between mouse-down and mouse-up, not system-wide at all times
-- Scroll events return immediately when no icon is showing
-- Settings read from memory rather than UserDefaults on every mouse event
-- Application list scanned once, in the background, only when that tab is opened
+- **Menu-bar only by default.** A Dock icon makes the app take focus and replace the
+  frontmost app's menu bar, which gets in the way of a tool that acts on selections made
+  elsewhere. The Dock switch is still in Settings if you want it.
+- A real Settings window with everything grouped under General / Appearance / Bob /
+  Applications, instead of a bare filter list.
+- English and 简体中文, switchable in the app, following your macOS language on first launch.
+- Fixed a crash in the mouse-event monitor, which removed its own handler mid-callback.
+- Lower overhead: drag events watched only during a drag, scroll events return immediately
+  when nothing is showing, settings read from memory rather than UserDefaults per event.
 
 ## Install
 
@@ -55,7 +55,7 @@ from Applications.
 3. Launch it and grant Accessibility permission when asked
 4. Look for the speech-bubble icon in the **menu bar**, top right
 
-Quit any older copy first. A previous version left running will mask the new one.
+Quit any older copy first; one left running will mask the new one.
 
 ## Requirements
 

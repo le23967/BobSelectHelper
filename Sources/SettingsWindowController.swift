@@ -1,0 +1,628 @@
+import AppKit
+
+/// The window shown when the Dock icon or the menu's settings item is used.
+///
+/// A single instance is kept alive by the app delegate and reused, so reopening the
+/// window neither rebuilds the view tree nor re-scans the installed applications.
+final class SettingsWindowController: NSWindowController, NSWindowDelegate {
+    private let settings = Settings.shared
+
+    // Header
+    private let headlineLabel = NSTextField(labelWithString: "")
+    private let statusLabel = NSTextField(labelWithString: "")
+    private let grantButton = NSButton()
+
+    // General
+    private let enabledCheckbox = NSButton(checkboxWithTitle: "", target: nil, action: nil)
+    private let dockCheckbox = NSButton(checkboxWithTitle: "", target: nil, action: nil)
+    private let dockHintLabel = NSTextField(labelWithString: "")
+    private let languagePopUp = NSPopUpButton()
+    private let triggerPopUp = NSPopUpButton()
+    private let hoverDelayPopUp = NSPopUpButton()
+
+    // Appearance
+    private let iconSizePopUp = NSPopUpButton()
+    private let positionPopUp = NSPopUpButton()
+    private let autoHidePopUp = NSPopUpButton()
+
+    // Bob
+    private let inputBoxPopUp = NSPopUpButton()
+    private let autoLaunchCheckbox = NSButton(checkboxWithTitle: "", target: nil, action: nil)
+    private let copyFallbackCheckbox = NSButton(checkboxWithTitle: "", target: nil, action: nil)
+
+    // Applications
+    private let tabView = NSTabView()
+    private let modeSegment = NSSegmentedControl()
+    private let filterHintLabel = NSTextField(labelWithString: "")
+    private let appTable = NSTableView()
+    private let appScroll = NSScrollView()
+    private let appCombo = NSComboBox()
+    private let addButton = NSButton()
+    private let removeButton = NSButton()
+
+    private var listedApps: [String] = []
+    private var installedApps: [(name: String, bundleID: String)] = []
+    private var didLoadInstalledApps = false
+
+    /// Grid row labels are built once, so each keeps a provider that `refresh()`
+    /// re-evaluates when the language changes.
+    private var rowLabels: [(field: NSTextField, text: () -> String)] = []
+
+    var onDockVisibilityChange: ((Bool) -> Void)?
+    var onLanguageChange: (() -> Void)?
+    var onAutoLaunchToggle: (() -> Void)?
+    var onRequestAccessibility: (() -> Void)?
+
+    init() {
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 520, height: 470),
+            styleMask: [.titled, .closable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        // NSWindowController owns the window; releasing it on close would leave a
+        // dangling controller when the window is reopened.
+        window.isReleasedWhenClosed = false
+        window.center()
+        super.init(window: window)
+        window.delegate = self
+        buildInterface()
+        refresh()
+    }
+
+    required init?(coder: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
+
+    // MARK: - Construction
+
+    private func buildInterface() {
+        guard let window else { return }
+        window.title = Localization.Window.title
+
+        let root = NSStackView()
+        root.orientation = .vertical
+        root.alignment = .leading
+        root.spacing = 12
+        root.edgeInsets = NSEdgeInsets(top: 18, left: 20, bottom: 18, right: 20)
+        root.translatesAutoresizingMaskIntoConstraints = false
+
+        root.addArrangedSubview(buildHeader())
+        root.addArrangedSubview(makeSeparator())
+
+        tabView.addTabViewItem(makeTab(Localization.Window.tabGeneral, view: buildGeneralTab()))
+        tabView.addTabViewItem(makeTab(Localization.Window.tabAppearance, view: buildAppearanceTab()))
+        tabView.addTabViewItem(makeTab(Localization.Window.tabBob, view: buildBobTab()))
+        tabView.addTabViewItem(makeTab(Localization.Window.tabApplications, view: buildApplicationsTab()))
+        tabView.translatesAutoresizingMaskIntoConstraints = false
+        root.addArrangedSubview(tabView)
+
+        let content = NSView()
+        content.addSubview(root)
+        window.contentView = content
+
+        NSLayoutConstraint.activate([
+            root.topAnchor.constraint(equalTo: content.topAnchor),
+            root.leadingAnchor.constraint(equalTo: content.leadingAnchor),
+            root.trailingAnchor.constraint(equalTo: content.trailingAnchor),
+            root.bottomAnchor.constraint(equalTo: content.bottomAnchor),
+            tabView.widthAnchor.constraint(equalTo: root.widthAnchor, constant: -40)
+        ])
+    }
+
+    private func buildHeader() -> NSView {
+        let iconView = NSImageView()
+        iconView.image = NSApplication.shared.applicationIconImage
+        iconView.imageScaling = .scaleProportionallyUpOrDown
+        iconView.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            iconView.widthAnchor.constraint(equalToConstant: 52),
+            iconView.heightAnchor.constraint(equalToConstant: 52)
+        ])
+
+        let title = NSTextField(labelWithString: "Bob Select Helper")
+        title.font = .systemFont(ofSize: 15, weight: .semibold)
+
+        headlineLabel.font = .systemFont(ofSize: 12)
+        headlineLabel.textColor = .secondaryLabelColor
+        headlineLabel.lineBreakMode = .byWordWrapping
+        headlineLabel.maximumNumberOfLines = 2
+
+        statusLabel.font = .systemFont(ofSize: 11)
+
+        grantButton.title = Localization.Window.grantAccess
+        grantButton.bezelStyle = .rounded
+        grantButton.controlSize = .small
+        grantButton.target = self
+        grantButton.action = #selector(requestAccessibility)
+
+        let statusRow = NSStackView(views: [statusLabel, grantButton])
+        statusRow.orientation = .horizontal
+        statusRow.spacing = 8
+
+        let textColumn = NSStackView(views: [title, headlineLabel, statusRow])
+        textColumn.orientation = .vertical
+        textColumn.alignment = .leading
+        textColumn.spacing = 3
+
+        let header = NSStackView(views: [iconView, textColumn])
+        header.orientation = .horizontal
+        header.alignment = .top
+        header.spacing = 14
+        return header
+    }
+
+    private func buildGeneralTab() -> NSView {
+        configure(languagePopUp, action: #selector(languageChanged))
+        configure(triggerPopUp, action: #selector(triggerChanged))
+        configure(hoverDelayPopUp, action: #selector(hoverDelayChanged))
+
+        enabledCheckbox.target = self
+        enabledCheckbox.action = #selector(toggleEnabled)
+        dockCheckbox.target = self
+        dockCheckbox.action = #selector(toggleDock)
+
+        dockHintLabel.font = .systemFont(ofSize: 11)
+        dockHintLabel.textColor = .secondaryLabelColor
+        dockHintLabel.lineBreakMode = .byWordWrapping
+        dockHintLabel.maximumNumberOfLines = 2
+        dockHintLabel.preferredMaxLayoutWidth = 430
+
+        let grid = makeGrid([
+            ({ Localization.Menu.language }, languagePopUp),
+            ({ Localization.Menu.triggerMethod }, triggerPopUp),
+            ({ Localization.Window.hoverDelayLabel }, hoverDelayPopUp)
+        ])
+
+        return makeTabBody([enabledCheckbox, dockCheckbox, dockHintLabel, grid])
+    }
+
+    private func buildAppearanceTab() -> NSView {
+        configure(iconSizePopUp, action: #selector(iconSizeChanged))
+        configure(positionPopUp, action: #selector(positionChanged))
+        configure(autoHidePopUp, action: #selector(autoHideChanged))
+
+        let grid = makeGrid([
+            ({ Localization.Window.iconSizeLabel }, iconSizePopUp),
+            ({ Localization.Menu.iconPosition }, positionPopUp),
+            ({ Localization.Window.autoHideLabel }, autoHidePopUp)
+        ])
+        return makeTabBody([grid])
+    }
+
+    private func buildBobTab() -> NSView {
+        configure(inputBoxPopUp, action: #selector(inputBoxChanged))
+
+        autoLaunchCheckbox.target = self
+        autoLaunchCheckbox.action = #selector(toggleAutoLaunch)
+        copyFallbackCheckbox.target = self
+        copyFallbackCheckbox.action = #selector(toggleCopyFallback)
+
+        let grid = makeGrid([({ Localization.Menu.bobInputBox }, inputBoxPopUp)])
+        return makeTabBody([grid, autoLaunchCheckbox, copyFallbackCheckbox])
+    }
+
+    private func buildApplicationsTab() -> NSView {
+        modeSegment.segmentCount = 3
+        modeSegment.trackingMode = .selectOne
+        modeSegment.target = self
+        modeSegment.action = #selector(filterModeChanged)
+
+        filterHintLabel.font = .systemFont(ofSize: 11)
+        filterHintLabel.textColor = .secondaryLabelColor
+        filterHintLabel.lineBreakMode = .byWordWrapping
+        filterHintLabel.maximumNumberOfLines = 3
+        filterHintLabel.preferredMaxLayoutWidth = 430
+
+        let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("app"))
+        column.width = 400
+        appTable.addTableColumn(column)
+        appTable.headerView = nil
+        appTable.dataSource = self
+        appTable.delegate = self
+        appTable.rowHeight = 20
+
+        appScroll.documentView = appTable
+        appScroll.hasVerticalScroller = true
+        appScroll.borderType = .bezelBorder
+        appScroll.translatesAutoresizingMaskIntoConstraints = false
+        appScroll.heightAnchor.constraint(equalToConstant: 150).isActive = true
+
+        appCombo.isEditable = true
+        appCombo.completes = true
+        appCombo.usesDataSource = true
+        appCombo.dataSource = self
+        appCombo.target = self
+        appCombo.action = #selector(addApp)
+
+        addButton.bezelStyle = .rounded
+        addButton.target = self
+        addButton.action = #selector(addApp)
+
+        removeButton.bezelStyle = .rounded
+        removeButton.target = self
+        removeButton.action = #selector(removeApp)
+
+        let addRow = NSStackView(views: [appCombo, addButton, removeButton])
+        addRow.orientation = .horizontal
+        addRow.spacing = 8
+        appCombo.setContentHuggingPriority(.defaultLow, for: .horizontal)
+
+        return makeTabBody([modeSegment, filterHintLabel, appScroll, addRow], fillWidth: true)
+    }
+
+    // MARK: - Layout helpers
+
+    private func configure(_ popUp: NSPopUpButton, action: Selector) {
+        popUp.target = self
+        popUp.action = action
+        popUp.controlSize = .regular
+    }
+
+    private func makeTab(_ label: String, view: NSView) -> NSTabViewItem {
+        let item = NSTabViewItem()
+        item.label = label
+        item.view = view
+        return item
+    }
+
+    private func makeTabBody(_ views: [NSView], fillWidth: Bool = false) -> NSView {
+        let stack = NSStackView(views: views)
+        stack.orientation = .vertical
+        stack.alignment = fillWidth ? .width : .leading
+        stack.spacing = 10
+        stack.edgeInsets = NSEdgeInsets(top: 16, left: 16, bottom: 16, right: 16)
+        stack.translatesAutoresizingMaskIntoConstraints = false
+
+        let host = NSView()
+        host.addSubview(stack)
+        NSLayoutConstraint.activate([
+            stack.topAnchor.constraint(equalTo: host.topAnchor),
+            stack.leadingAnchor.constraint(equalTo: host.leadingAnchor),
+            stack.trailingAnchor.constraint(equalTo: host.trailingAnchor)
+        ])
+        return host
+    }
+
+    private func makeGrid(_ rows: [(() -> String, NSView)]) -> NSGridView {
+        let grid = NSGridView(numberOfColumns: 2, rows: 0)
+        grid.columnSpacing = 10
+        grid.rowSpacing = 8
+        for (label, control) in rows {
+            let text = NSTextField(labelWithString: label())
+            text.alignment = .right
+            rowLabels.append((field: text, text: label))
+            grid.addRow(with: [text, control])
+        }
+        grid.column(at: 0).xPlacement = .trailing
+        return grid
+    }
+
+    private func makeSeparator() -> NSView {
+        let line = NSBox()
+        line.boxType = .separator
+        return line
+    }
+
+    // MARK: - State
+
+    /// Rebuilds every user-visible string and re-reads all values from Settings.
+    func refresh() {
+        window?.title = Localization.Window.title
+        headlineLabel.stringValue = Localization.Window.headline
+
+        for row in rowLabels {
+            row.field.stringValue = row.text()
+        }
+
+        let trusted = AccessibilitySupport.isTrusted
+        statusLabel.stringValue = trusted
+            ? Localization.Window.statusReady
+            : Localization.Window.statusNeedsAccessibility
+        statusLabel.textColor = trusted ? .systemGreen : .systemOrange
+        grantButton.isHidden = trusted
+        grantButton.title = Localization.Window.grantAccess
+
+        tabView.tabViewItems[0].label = Localization.Window.tabGeneral
+        tabView.tabViewItems[1].label = Localization.Window.tabAppearance
+        tabView.tabViewItems[2].label = Localization.Window.tabBob
+        tabView.tabViewItems[3].label = Localization.Window.tabApplications
+
+        enabledCheckbox.title = Localization.Menu.enableHelper
+        enabledCheckbox.state = settings.isEnabled ? .on : .off
+
+        dockCheckbox.title = Localization.Window.showInDock
+        dockCheckbox.state = settings.showInDock ? .on : .off
+        dockHintLabel.stringValue = Localization.Window.showInDockHint
+
+        fill(languagePopUp, titles: [Localization.Menu.languageEnglish, Localization.Menu.languageChinese],
+             selected: settings.language == .english ? 0 : 1)
+
+        fill(triggerPopUp, titles: [Localization.Menu.translateOnHover, Localization.Menu.translateOnClick],
+             selected: settings.activationMode == .hover ? 0 : 1)
+
+        let delays: [TimeInterval] = [0.0, 0.12, 0.22, 0.40, 0.70]
+        fill(hoverDelayPopUp,
+             titles: [Localization.Menu.immediate, Localization.Menu.fast, Localization.Menu.balanced,
+                      Localization.Menu.slow, Localization.Menu.verySlow],
+             selected: nearestIndex(of: settings.hoverDelay, in: delays))
+        hoverDelayPopUp.isEnabled = settings.activationMode == .hover
+
+        let sizes: [CGFloat] = [26, 30, 34, 40, 48, 56]
+        fill(iconSizePopUp,
+             titles: [Localization.Menu.small, Localization.Menu.smaller, Localization.Menu.default,
+                      Localization.Menu.larger, Localization.Menu.large, Localization.Menu.extraLarge],
+             selected: nearestIndex(of: Double(settings.iconSize), in: sizes.map(Double.init)))
+
+        fill(positionPopUp,
+             titles: [Localization.Menu.bottomRight, Localization.Menu.topRight,
+                      Localization.Menu.bottomLeft, Localization.Menu.topLeft],
+             selected: [PanelPosition.belowRight, .aboveRight, .belowLeft, .aboveLeft]
+                .firstIndex(of: settings.panelPosition) ?? 0)
+
+        let hides: [TimeInterval] = [2, 5, 10, 0]
+        fill(autoHidePopUp,
+             titles: [Localization.Menu.twoSeconds, Localization.Menu.fiveSeconds,
+                      Localization.Menu.tenSeconds, Localization.Window.neverLabel],
+             selected: hides.firstIndex(of: settings.autoHideDelay) ?? 1)
+
+        fill(inputBoxPopUp,
+             titles: [Localization.Menu.alwaysExpandInputBox, Localization.Menu.followBobState,
+                      Localization.Menu.alwaysCollapseInputBox],
+             selected: [InputBoxState.alwaysUnfold, .last, .alwaysFold]
+                .firstIndex(of: settings.inputBoxState) ?? 0)
+
+        let autoLaunchStatus = BobAutoLaunchService.shared.status
+        autoLaunchCheckbox.title = autoLaunchStatus == .requiresApproval
+            ? Localization.Menu.autoLaunchPendingApproval
+            : Localization.Menu.autoLaunchWithBob
+        autoLaunchCheckbox.state = BobAutoLaunchService.shared.isEnabledOrPendingApproval ? .on : .off
+
+        copyFallbackCheckbox.title = Localization.Menu.useCopyFallback
+        copyFallbackCheckbox.state = settings.copyFallbackEnabled ? .on : .off
+
+        modeSegment.setLabel(Localization.Filter.allowAll, forSegment: 0)
+        modeSegment.setLabel(Localization.Filter.whitelist, forSegment: 1)
+        modeSegment.setLabel(Localization.Filter.blacklist, forSegment: 2)
+        modeSegment.selectedSegment = [AppFilterMode.allowAll, .whitelist, .blacklist]
+            .firstIndex(of: settings.appFilterMode) ?? 0
+        filterHintLabel.stringValue = Localization.Filter.explanation
+
+        addButton.title = Localization.Filter.add
+        removeButton.title = Localization.Filter.remove
+        appCombo.placeholderString = Localization.Filter.addApplication
+
+        reloadAppList()
+    }
+
+    private func fill(_ popUp: NSPopUpButton, titles: [String], selected: Int) {
+        popUp.removeAllItems()
+        popUp.addItems(withTitles: titles)
+        if selected >= 0, selected < titles.count {
+            popUp.selectItem(at: selected)
+        }
+    }
+
+    private func nearestIndex(of value: Double, in options: [Double]) -> Int {
+        var bestIndex = 0
+        var bestDistance = Double.greatestFiniteMagnitude
+        for (index, option) in options.enumerated() {
+            let distance = abs(option - value)
+            if distance < bestDistance {
+                bestDistance = distance
+                bestIndex = index
+            }
+        }
+        return bestIndex
+    }
+
+    private func reloadAppList() {
+        let mode = settings.appFilterMode
+        listedApps = mode == .whitelist
+            ? settings.whitelistedApps.sorted()
+            : (mode == .blacklist ? settings.blacklistedApps.sorted() : [])
+
+        let editable = mode != .allowAll
+        modeSegment.isEnabled = true
+        appTable.isEnabled = editable
+        appCombo.isEnabled = editable
+        addButton.isEnabled = editable
+        removeButton.isEnabled = editable
+        appTable.reloadData()
+    }
+
+    /// Scanning the applications folders is deferred until the tab is actually used,
+    /// and only ever runs once per launch.
+    private func loadInstalledAppsIfNeeded() {
+        guard !didLoadInstalledApps else { return }
+        didLoadInstalledApps = true
+
+        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+            let found = SettingsWindowController.scanInstalledApps()
+            DispatchQueue.main.async {
+                self?.installedApps = found
+                self?.appCombo.reloadData()
+            }
+        }
+    }
+
+    /// Reads each Info.plist directly. `Bundle(path:)` would work too, but CoreFoundation
+    /// caches every bundle it creates for the process lifetime, so scanning hundreds of
+    /// apps that way permanently inflates memory.
+    private static func scanInstalledApps() -> [(name: String, bundleID: String)] {
+        let manager = FileManager.default
+        let roots = ["/Applications", NSHomeDirectory() + "/Applications", "/System/Applications"]
+        var result: [(name: String, bundleID: String)] = []
+        var seen = Set<String>()
+
+        for root in roots {
+            guard let entries = try? manager.contentsOfDirectory(atPath: root) else { continue }
+            for entry in entries where entry.hasSuffix(".app") {
+                let plistPath = "\(root)/\(entry)/Contents/Info.plist"
+                guard let info = NSDictionary(contentsOfFile: plistPath),
+                      let bundleID = info["CFBundleIdentifier"] as? String,
+                      !seen.contains(bundleID)
+                else { continue }
+                seen.insert(bundleID)
+                result.append((name: String(entry.dropLast(4)), bundleID: bundleID))
+            }
+        }
+
+        return result.sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    func show() {
+        loadInstalledAppsIfNeeded()
+        refresh()
+        window?.makeKeyAndOrderFront(nil)
+        NSApplication.shared.activate(ignoringOtherApps: true)
+    }
+
+    // MARK: - Actions
+
+    @objc private func toggleEnabled() {
+        settings.isEnabled = enabledCheckbox.state == .on
+    }
+
+    @objc private func toggleDock() {
+        let show = dockCheckbox.state == .on
+        settings.showInDock = show
+        onDockVisibilityChange?(show)
+    }
+
+    @objc private func languageChanged() {
+        settings.language = languagePopUp.indexOfSelectedItem == 0 ? .english : .chinese
+        refresh()
+        onLanguageChange?()
+    }
+
+    @objc private func triggerChanged() {
+        settings.activationMode = triggerPopUp.indexOfSelectedItem == 0 ? .hover : .click
+        hoverDelayPopUp.isEnabled = settings.activationMode == .hover
+    }
+
+    @objc private func hoverDelayChanged() {
+        let delays: [TimeInterval] = [0.0, 0.12, 0.22, 0.40, 0.70]
+        settings.hoverDelay = delays[safe: hoverDelayPopUp.indexOfSelectedItem] ?? 0.22
+    }
+
+    @objc private func iconSizeChanged() {
+        let sizes: [CGFloat] = [26, 30, 34, 40, 48, 56]
+        settings.iconSize = sizes[safe: iconSizePopUp.indexOfSelectedItem] ?? 34
+    }
+
+    @objc private func positionChanged() {
+        let positions: [PanelPosition] = [.belowRight, .aboveRight, .belowLeft, .aboveLeft]
+        settings.panelPosition = positions[safe: positionPopUp.indexOfSelectedItem] ?? .belowRight
+    }
+
+    @objc private func autoHideChanged() {
+        let hides: [TimeInterval] = [2, 5, 10, 0]
+        settings.autoHideDelay = hides[safe: autoHidePopUp.indexOfSelectedItem] ?? 5
+    }
+
+    @objc private func inputBoxChanged() {
+        let states: [InputBoxState] = [.alwaysUnfold, .last, .alwaysFold]
+        settings.inputBoxState = states[safe: inputBoxPopUp.indexOfSelectedItem] ?? .alwaysUnfold
+    }
+
+    @objc private func toggleAutoLaunch() {
+        onAutoLaunchToggle?()
+        refresh()
+    }
+
+    @objc private func toggleCopyFallback() {
+        settings.copyFallbackEnabled = copyFallbackCheckbox.state == .on
+    }
+
+    @objc private func requestAccessibility() {
+        onRequestAccessibility?()
+    }
+
+    @objc private func filterModeChanged() {
+        let modes: [AppFilterMode] = [.allowAll, .whitelist, .blacklist]
+        settings.appFilterMode = modes[safe: modeSegment.selectedSegment] ?? .allowAll
+        reloadAppList()
+    }
+
+    @objc private func addApp() {
+        let typed = appCombo.stringValue.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !typed.isEmpty else { return }
+
+        let bundleID = installedApps
+            .first { $0.name.localizedCaseInsensitiveCompare(typed) == .orderedSame }?
+            .bundleID ?? typed
+
+        switch settings.appFilterMode {
+        case .whitelist: settings.addToWhitelist(bundleID)
+        case .blacklist: settings.addToBlacklist(bundleID)
+        case .allowAll: return
+        }
+
+        appCombo.stringValue = ""
+        reloadAppList()
+    }
+
+    @objc private func removeApp() {
+        let row = appTable.selectedRow
+        guard row >= 0, row < listedApps.count else { return }
+        let bundleID = listedApps[row]
+
+        switch settings.appFilterMode {
+        case .whitelist: settings.removeFromWhitelist(bundleID)
+        case .blacklist: settings.removeFromBlacklist(bundleID)
+        case .allowAll: return
+        }
+
+        reloadAppList()
+    }
+}
+
+// MARK: - Table and combo data
+
+extension SettingsWindowController: NSTableViewDataSource, NSTableViewDelegate {
+    func numberOfRows(in tableView: NSTableView) -> Int {
+        listedApps.count
+    }
+
+    func tableView(_ tableView: NSTableView, objectValueFor tableColumn: NSTableColumn?, row: Int) -> Any? {
+        guard let bundleID = listedApps[safe: row] else { return nil }
+        if let match = installedApps.first(where: { $0.bundleID == bundleID }) {
+            return "\(match.name)  —  \(bundleID)"
+        }
+        return bundleID
+    }
+}
+
+extension SettingsWindowController: NSComboBoxDataSource {
+    func numberOfItems(in comboBox: NSComboBox) -> Int {
+        installedApps.count
+    }
+
+    func comboBox(_ comboBox: NSComboBox, objectValueForItemAt index: Int) -> Any? {
+        installedApps[safe: index]?.name
+    }
+
+    func comboBox(_ comboBox: NSComboBox, indexOfItemWithStringValue string: String) -> UInt {
+        guard let index = installedApps.firstIndex(where: {
+            $0.name.localizedCaseInsensitiveCompare(string) == .orderedSame
+        }) else { return UInt(NSNotFound) }
+        return UInt(index)
+    }
+
+    func comboBox(_ comboBox: NSComboBox, completedString string: String) -> String? {
+        installedApps.first { $0.name.localizedCaseInsensitiveHasPrefix(string) }?.name
+    }
+}
+
+private extension Array {
+    subscript(safe index: Int) -> Element? {
+        indices.contains(index) ? self[index] : nil
+    }
+}
+
+private extension String {
+    func localizedCaseInsensitiveHasPrefix(_ prefix: String) -> Bool {
+        range(of: prefix, options: [.caseInsensitive, .anchored]) != nil
+    }
+}

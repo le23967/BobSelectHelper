@@ -5,9 +5,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var selectionController: SelectionController!
     private let settings = Settings.shared
     private let bobAutoLaunchService = BobAutoLaunchService.shared
-    private var appListManager: AppListManager?
+    private var settingsWindow: SettingsWindowController?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
+        applyDockVisibility(settings.showInDock)
         setupApplicationMenu()
         setupStatusItem()
 
@@ -36,7 +37,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func setupApplicationMenu() {
         let appMenu = NSMenu()
         appMenu.addItem(
-            withTitle: Localization.Menu.applicationFilterSettings,
+            withTitle: Localization.Menu.settings,
             action: #selector(openAppListManager),
             keyEquivalent: ","
         ).target = self
@@ -191,9 +192,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         fallback.state = settings.copyFallbackEnabled ? .on : .off
         menu.addItem(fallback)
 
-        let appFilter = NSMenuItem(title: Localization.Menu.applicationFilterSettings, action: #selector(openAppListManager), keyEquivalent: "")
-        appFilter.target = self
-        menu.addItem(appFilter)
+        let settingsItem = NSMenuItem(title: Localization.Menu.settings, action: #selector(openAppListManager), keyEquivalent: ",")
+        settingsItem.target = self
+        menu.addItem(settingsItem)
+
+        let dockItem = NSMenuItem(title: Localization.Window.showInDock, action: #selector(toggleShowInDock), keyEquivalent: "")
+        dockItem.target = self
+        dockItem.state = settings.showInDock ? .on : .off
+        menu.addItem(dockItem)
 
         let permission = NSMenuItem(title: Localization.Menu.openAccessibilityPermissions, action: #selector(requestAccessibility), keyEquivalent: "")
         permission.target = self
@@ -276,7 +282,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         settings.language = language
         // The status menu rebuilds on open; the app menu and any open window do not.
         setupApplicationMenu()
-        appListManager?.reloadLocalizedText()
+        settingsWindow?.refresh()
     }
 
     @objc private func toggleEnabled() {
@@ -336,6 +342,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         bobAutoLaunchService.openLoginItemsSettings()
     }
 
+    @objc private func toggleShowInDock() {
+        let show = !settings.showInDock
+        settings.showInDock = show
+        applyDockVisibility(show)
+        settingsWindow?.refresh()
+    }
+
     @objc private func toggleCopyFallback() {
         settings.copyFallbackEnabled.toggle()
     }
@@ -352,13 +365,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     @objc private func openAppListManager() {
-        if appListManager?.window?.isVisible == true {
-            appListManager?.window?.makeKeyAndOrderFront(nil)
-        } else {
-            appListManager = AppListManager()
-            appListManager?.window?.makeKeyAndOrderFront(nil)
+        if settingsWindow == nil {
+            let controller = SettingsWindowController()
+            controller.onDockVisibilityChange = { [weak self] show in
+                self?.applyDockVisibility(show)
+            }
+            controller.onLanguageChange = { [weak self] in
+                self?.setupApplicationMenu()
+            }
+            controller.onAutoLaunchToggle = { [weak self] in
+                self?.toggleBobAutoLaunch()
+            }
+            controller.onRequestAccessibility = { [weak self] in
+                self?.requestAccessibility()
+            }
+            settingsWindow = controller
         }
-        NSApplication.shared.activate(ignoringOtherApps: true)
+        settingsWindow?.show()
+    }
+
+    /// Switching policy at runtime is what actually adds or removes the Dock tile;
+    /// LSUIElement is only consulted at launch.
+    private func applyDockVisibility(_ show: Bool) {
+        NSApplication.shared.setActivationPolicy(show ? .regular : .accessory)
+        if show {
+            NSApplication.shared.activate(ignoringOtherApps: true)
+        }
     }
 
     @objc private func showWelcomeFromMenu() {

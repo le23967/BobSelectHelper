@@ -7,6 +7,8 @@ final class SelectionController {
 
     private var globalMonitor: Any?
     private var localMonitor: Any?
+    private var dragGlobalMonitor: Any?
+    private var dragLocalMonitor: Any?
     private var mouseDownPoint: NSPoint?
     private var didDrag = false
     private var requestGeneration = 0
@@ -26,7 +28,10 @@ final class SelectionController {
     func start() {
         guard globalMonitor == nil else { return }
 
-        let mask: NSEvent.EventTypeMask = [.leftMouseDown, .leftMouseDragged, .leftMouseUp, .scrollWheel]
+        // .leftMouseDragged fires continuously during any drag anywhere on the system.
+        // It is only meaningful between a mouse-down and the matching mouse-up, so it is
+        // subscribed on demand in `beginDragTracking()` rather than left running.
+        let mask: NSEvent.EventTypeMask = [.leftMouseDown, .leftMouseUp, .scrollWheel]
         globalMonitor = NSEvent.addGlobalMonitorForEvents(matching: mask) { [weak self] event in
             self?.handle(event)
         }
@@ -34,6 +39,41 @@ final class SelectionController {
         localMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
             self?.handle(event)
             return event
+        }
+    }
+
+    private func beginDragTracking() {
+        guard dragGlobalMonitor == nil else { return }
+
+        let mask: NSEvent.EventTypeMask = [.leftMouseDragged]
+        dragGlobalMonitor = NSEvent.addGlobalMonitorForEvents(matching: mask) { [weak self] _ in
+            self?.trackDrag()
+        }
+        dragLocalMonitor = NSEvent.addLocalMonitorForEvents(matching: mask) { [weak self] event in
+            self?.trackDrag()
+            return event
+        }
+    }
+
+    private func endDragTracking() {
+        if let dragGlobalMonitor {
+            NSEvent.removeMonitor(dragGlobalMonitor)
+            self.dragGlobalMonitor = nil
+        }
+        if let dragLocalMonitor {
+            NSEvent.removeMonitor(dragLocalMonitor)
+            self.dragLocalMonitor = nil
+        }
+    }
+
+    private func trackDrag() {
+        // Once the threshold is crossed this returns immediately, so the monitor is
+        // left in place until mouse-up. Calling removeMonitor here would free the
+        // handler block while it is still executing.
+        guard !didDrag, let start = mouseDownPoint else { return }
+        let point = NSEvent.mouseLocation
+        if hypot(point.x - start.x, point.y - start.y) > 3 {
+            didDrag = true
         }
     }
 
@@ -46,6 +86,7 @@ final class SelectionController {
             NSEvent.removeMonitor(localMonitor)
             self.localMonitor = nil
         }
+        endDragTracking()
         panel.hidePanel()
     }
 
@@ -69,14 +110,10 @@ final class SelectionController {
             mouseDownPoint = point
             didDrag = false
             requestGeneration += 1
-
-        case .leftMouseDragged:
-            if let start = mouseDownPoint {
-                let distance = hypot(point.x - start.x, point.y - start.y)
-                if distance > 3 { didDrag = true }
-            }
+            beginDragTracking()
 
         case .leftMouseUp:
+            endDragTracking()
             guard !panel.containsScreenPoint(point) else { return }
             let looksLikeSelection = didDrag || event.clickCount >= 2
             mouseDownPoint = nil
@@ -85,6 +122,9 @@ final class SelectionController {
             inspectSelection(after: 0.08, mousePoint: point)
 
         case .scrollWheel:
+            // Scrolling emits a dense stream of events; only act when there is
+            // something on screen to dismiss.
+            guard panel.isVisible else { return }
             panel.hidePanel()
             requestGeneration += 1
 
@@ -127,15 +167,7 @@ final class SelectionController {
             return false
         }
 
-        let settings = Settings.shared
-        switch settings.appFilterMode {
-        case .allowAll:
-            return true
-        case .whitelist:
-            return settings.whitelistedApps.contains(bundleID)
-        case .blacklist:
-            return !settings.blacklistedApps.contains(bundleID)
-        }
+        return Settings.shared.allowsApplication(bundleID)
     }
 
     private func translate(_ text: String) {

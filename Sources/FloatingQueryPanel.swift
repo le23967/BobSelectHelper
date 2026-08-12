@@ -11,6 +11,9 @@ final class FloatingQueryPanel: NSPanel {
     private var localMouseMonitor: Any?
     private var pointerInside = false
     private var translationInProgress = false
+    /// The symbol image is rebuilt only when the configured icon size changes,
+    /// not on every selection.
+    private var renderedIconSide: CGFloat = 0
 
     var onTranslate: ((String) -> Void)?
 
@@ -39,7 +42,7 @@ final class FloatingQueryPanel: NSPanel {
         queryButton.isBordered = false
         queryButton.bezelStyle = .regularSquare
         queryButton.imagePosition = .imageOnly
-        queryButton.toolTip = "使用 Bob 翻译"
+        queryButton.toolTip = Localization.Panel.translateWithBob
         queryButton.target = self
         queryButton.action = #selector(buttonPressed)
         queryButton.imageScaling = .scaleProportionallyDown
@@ -92,6 +95,11 @@ final class FloatingQueryPanel: NSPanel {
 
     private func applyCurrentSettings() {
         let side = Settings.shared.iconSize
+        queryButton.toolTip = Localization.Panel.translateWithBob
+
+        guard side != renderedIconSide else { return }
+        renderedIconSide = side
+
         let size = NSSize(width: side, height: side)
         let currentOrigin = frame.origin
         setFrame(NSRect(origin: currentOrigin, size: size), display: false)
@@ -106,7 +114,7 @@ final class FloatingQueryPanel: NSPanel {
         queryButton.frame = container.bounds.insetBy(dx: inset, dy: inset)
         queryButton.image = NSImage(
             systemSymbolName: "character.bubble.fill",
-            accessibilityDescription: "使用 Bob 翻译"
+            accessibilityDescription: Localization.Panel.translateWithBob
         )?.withSymbolConfiguration(
             NSImage.SymbolConfiguration(pointSize: side * 0.52, weight: .medium)
         )

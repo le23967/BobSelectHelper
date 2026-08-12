@@ -173,9 +173,91 @@ struct Localization {
             current == .english ? "Language" : "语言"
         }
 
+        static var settings: String {
+            current == .english ? "Settings…" : "设置…"
+        }
+
         static var languageEnglish: String { "English" }
 
         static var languageChinese: String { "简体中文" }
+    }
+
+    struct Panel {
+        static var translateWithBob: String {
+            current == .english ? "Translate with Bob" : "使用 Bob 翻译"
+        }
+    }
+
+    struct Window {
+        static var title: String {
+            current == .english ? "Bob Select Helper" : "Bob Select Helper"
+        }
+
+        static var headline: String {
+            current == .english ?
+                "Select text anywhere, then click the Bob icon that appears." :
+                "在任意应用中选中文字，然后点击出现的 Bob 图标。"
+        }
+
+        static var tabGeneral: String {
+            current == .english ? "General" : "通用"
+        }
+
+        static var tabAppearance: String {
+            current == .english ? "Appearance" : "外观"
+        }
+
+        static var tabBob: String {
+            current == .english ? "Bob" : "Bob"
+        }
+
+        static var tabApplications: String {
+            current == .english ? "Applications" : "应用"
+        }
+
+        static var statusReady: String {
+            current == .english ? "Ready" : "已就绪"
+        }
+
+        static var statusNeedsAccessibility: String {
+            current == .english ?
+                "Accessibility permission is required" :
+                "需要辅助功能权限"
+        }
+
+        static var grantAccess: String {
+            current == .english ? "Grant Access" : "授予权限"
+        }
+
+        static var showInDock: String {
+            current == .english ? "Show icon in the Dock" : "在程序坞中显示图标"
+        }
+
+        static var showInDockHint: String {
+            current == .english ?
+                "Turn this off to run from the menu bar only. The menu-bar icon stays either way." :
+                "关闭后仅在菜单栏运行。无论如何菜单栏图标都会保留。"
+        }
+
+        static var hoverDelayLabel: String {
+            current == .english ? "Hover delay" : "悬停延迟"
+        }
+
+        static var iconSizeLabel: String {
+            current == .english ? "Icon size" : "图标大小"
+        }
+
+        static var autoHideLabel: String {
+            current == .english ? "Auto-hide after" : "自动隐藏"
+        }
+
+        static var neverLabel: String {
+            current == .english ? "Never" : "不隐藏"
+        }
+
+        static var secondsSuffix: String {
+            current == .english ? "s" : " 秒"
+        }
     }
 
     struct Filter {

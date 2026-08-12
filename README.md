@@ -1,6 +1,24 @@
-# Bob Select Helper 0.5.3
+# Bob Select Helper 0.6.0
 
 A lightweight, independent macOS helper that recreates the useful part of Easydict's mouse-selection workflow and sends selected text to Bob.
+
+## What's new in 0.6.0
+
+- **Dock icon is optional** - "Show icon in the Dock" in Settings, or in the menu-bar menu.
+  Turning it off drops the app to menu-bar-only immediately, no restart, and the choice is
+  remembered.
+- **A real Settings window** - opening the app now shows what it does, whether Accessibility
+  is granted, and every option grouped under General / Appearance / Bob / Applications,
+  instead of dropping you straight into a bare filter list.
+- **Fewer wakeups** - `leftMouseDragged` is only monitored between mouse-down and mouse-up
+  rather than system-wide at all times, and scroll events return immediately when no icon
+  is on screen.
+- **Settings are read from memory** - values are loaded once at launch instead of hitting
+  UserDefaults on every mouse event.
+- **Fixed a crash** in the mouse-event monitor, which removed its own handler from inside
+  its own callback.
+- Application scanning reads `Info.plist` directly and runs once, in the background, only
+  when the Applications tab is used.
 
 ## What's new in 0.5.3
 
@@ -105,10 +123,11 @@ This requires GitHub CLI to be installed and authenticated.
 
 ## Where to find the app
 
-Bob Select Helper is reachable in two places:
-
-- **Dock** - the app has a normal Dock icon. Clicking it opens Application Filter Settings.
-- **Menu bar** - the `character.bubble` icon in the top-right holds the full settings menu.
+- **Menu bar** - the `character.bubble` icon in the top-right. Always present, and holds
+  the full settings menu.
+- **Dock** - optional. On by default; clicking the icon opens Settings. Turn it off with
+  **Show icon in the Dock**, in Settings > General or in the menu-bar menu, and the app
+  runs from the menu bar alone.
 
 ## Language
 

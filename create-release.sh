@@ -2,7 +2,7 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")" && pwd)"
-VERSION="0.5.1"
+VERSION="0.5.2"
 RELEASE_DIR="$ROOT/releases"
 
 if ! command -v gh >/dev/null 2>&1; then
@@ -21,23 +21,30 @@ echo "Creating GitHub Release v$VERSION"
 echo "===================================="
 echo ""
 
-RELEASE_NOTES="Release v0.5.1 - Multi-language Support & Menu Bar Enhancements
+RELEASE_NOTES="Release v0.5.2 - Dock Visibility & Better Accessibility
 
-## Major Improvements in v0.5.1
+## Major Improvements in v0.5.2
 
+- 📦 **Now Shows in Dock** - Easy access alongside other apps
 - 🌐 **Chinese Localization** - Full support for Chinese (简体中文)
-- ✨ **Professional Menu Bar Icon** - Displays in top-right system menu bar
+- ✨ **Professional Icon** - Beautiful custom icon in Dock
 - 🎯 **Improved Installation** - Drag-and-drop to Applications works perfectly
 - 🔧 **Better DMG Layout** - Applications folder visible for easy installation
 - 📱 **Universal Binary** - Native support for Intel and Apple Silicon
 
-## Important Notes
+## App Access
 
-### This is a Menu Bar App
-- App icon appears in the **top-right menu bar**, NOT the Dock
-- Click the icon to access settings
-- Runs silently in the background
-- Perfect for quick access without cluttering your Dock
+### Now Visible in Dock
+- App icon shows in **Dock** for easy access
+- One-click to open settings
+- Can pin to Dock for quick access
+- Professional appearance alongside other apps
+
+### Features
+- Works seamlessly with Bob
+- Simple AppleScript communication
+- No complex plugin dependencies
+- Easy to install and uninstall
 
 ## Installation Instructions
 

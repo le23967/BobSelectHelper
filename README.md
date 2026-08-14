@@ -1,6 +1,17 @@
-# Bob Select Helper 0.6.2
+# Bob Select Helper 0.6.3
 
 A lightweight, independent macOS helper that recreates the useful part of Easydict's mouse-selection workflow and sends selected text to Bob.
+
+## What's new in 0.6.3
+
+- **Stops other selection tools flickering.** In apps that do not report their selection
+  through Accessibility, such as Microsoft Word, the helper falls back to sending
+  Command-C. That briefly disturbs the clipboard, and tools like PopClip that watch it
+  would appear and vanish. The fallback no longer empties the clipboard first, cutting the
+  pasteboard changes from three to two, and to none at all when the app ignores the copy.
+- **Per-app Command-C exceptions.** Settings > Bob has a list of apps where Command-C is
+  never sent. Add Word there and PopClip is left alone, while the helper keeps working
+  normally everywhere else.
 
 ## What's new in 0.6.2
 
@@ -165,9 +176,18 @@ Click the menu-bar icon to access settings. You can change:
 - Hover delay
 - Floating icon size and position
 - Auto-hide duration
-- Command-C fallback
+- Command-C fallback, with per-app exceptions
 - Language (English / 简体中文)
 - **Application Filter Settings**: Control which applications can trigger the helper
+
+### Command-C and other selection tools
+
+Some apps do not expose the selected text through Accessibility. For those the helper
+sends Command-C, reads the clipboard, then puts the previous contents back. Other
+selection tools that watch the clipboard can react to that and flicker.
+
+If that happens, open **Settings > Bob** and add the app under **Never use Command-C in
+these apps**. The helper still tries Accessibility there, and leaves the clipboard alone.
 
 ### Application filter
 

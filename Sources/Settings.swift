@@ -49,6 +49,7 @@ final class Settings {
         static let blacklistedApps = "blacklistedApps"
         static let language = "language"
         static let showInDock = "showInDock"
+        static let copyFallbackExcludedApps = "copyFallbackExcludedApps"
     }
 
     private let defaults = UserDefaults.standard
@@ -66,6 +67,7 @@ final class Settings {
     private var cachedAppFilterMode: AppFilterMode
     private var cachedWhitelist: Set<String>
     private var cachedBlacklist: Set<String>
+    private var cachedCopyFallbackExcluded: Set<String>
 
     private init() {
         let defaults = self.defaults
@@ -114,6 +116,7 @@ final class Settings {
 
         cachedWhitelist = Set(defaults.array(forKey: Key.whitelistedApps) as? [String] ?? [])
         cachedBlacklist = Set(defaults.array(forKey: Key.blacklistedApps) as? [String] ?? [])
+        cachedCopyFallbackExcluded = Set(defaults.array(forKey: Key.copyFallbackExcludedApps) as? [String] ?? [])
     }
 
     private static func clamp(_ value: Double, _ low: Double, _ high: Double) -> Double {
@@ -228,6 +231,32 @@ final class Settings {
             cachedBlacklist = newValue
             defaults.set(Array(newValue).sorted(), forKey: Key.blacklistedApps)
         }
+    }
+
+    /// Applications where the synthetic Command-C is never sent, even when the
+    /// fallback is enabled. Accessibility reading is still attempted normally.
+    var copyFallbackExcludedApps: Set<String> {
+        get { cachedCopyFallbackExcluded }
+        set {
+            cachedCopyFallbackExcluded = newValue
+            defaults.set(Array(newValue).sorted(), forKey: Key.copyFallbackExcludedApps)
+        }
+    }
+
+    func addToCopyFallbackExclusions(_ bundleID: String) {
+        copyFallbackExcludedApps = cachedCopyFallbackExcluded.union([bundleID])
+    }
+
+    func removeFromCopyFallbackExclusions(_ bundleID: String) {
+        copyFallbackExcludedApps = cachedCopyFallbackExcluded.subtracting([bundleID])
+    }
+
+    /// Command-C is disruptive to other tools that watch the pasteboard, so it is
+    /// suppressed wherever the user has excluded it.
+    func allowsCopyFallback(in bundleID: String?) -> Bool {
+        guard cachedCopyFallback else { return false }
+        guard let bundleID else { return true }
+        return !cachedCopyFallbackExcluded.contains(bundleID)
     }
 
     var didShowWelcome: Bool {

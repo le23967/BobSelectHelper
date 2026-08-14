@@ -118,8 +118,8 @@ final class SelectionController {
             let looksLikeSelection = didDrag || event.clickCount >= 2
             mouseDownPoint = nil
             didDrag = false
-            guard looksLikeSelection, shouldInspectFrontmostApplication() else { return }
-            inspectSelection(after: 0.08, mousePoint: point)
+            guard looksLikeSelection, let bundleID = inspectableFrontmostApplication() else { return }
+            inspectSelection(after: 0.08, mousePoint: point, bundleID: bundleID)
 
         case .scrollWheel:
             // Scrolling emits a dense stream of events; only act when there is
@@ -133,14 +133,14 @@ final class SelectionController {
         }
     }
 
-    private func inspectSelection(after delay: TimeInterval, mousePoint: NSPoint) {
+    private func inspectSelection(after delay: TimeInterval, mousePoint: NSPoint, bundleID: String?) {
         requestGeneration += 1
         let generation = requestGeneration
 
         DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             guard let self, generation == self.requestGeneration else { return }
 
-            self.reader.readSelectedText { [weak self] text in
+            self.reader.readSelectedText(in: bundleID) { [weak self] text in
                 guard let self,
                       generation == self.requestGeneration,
                       let text
@@ -153,9 +153,14 @@ final class SelectionController {
         }
     }
 
-    private func shouldInspectFrontmostApplication() -> Bool {
+    /// Returns the frontmost bundle identifier when the helper may act there.
+    ///
+    /// The identifier is carried through so per-app rules, such as suppressing the
+    /// Command-C fallback, can be applied to the app the selection came from. A nil
+    /// return means the helper should stay out of the way entirely.
+    private func inspectableFrontmostApplication() -> String? {
         guard let bundleID = NSWorkspace.shared.frontmostApplication?.bundleIdentifier else {
-            return true
+            return ""
         }
 
         let alwaysIgnored = [
@@ -164,10 +169,10 @@ final class SelectionController {
         ].compactMap { $0 }
 
         if alwaysIgnored.contains(bundleID) {
-            return false
+            return nil
         }
 
-        return Settings.shared.allowsApplication(bundleID)
+        return Settings.shared.allowsApplication(bundleID) ? bundleID : nil
     }
 
     private func translate(_ text: String) {

@@ -3,13 +3,13 @@ import ApplicationServices
 import Carbon
 
 final class SelectionTextReader {
-    func readSelectedText(completion: @escaping (String?) -> Void) {
+    func readSelectedText(in bundleID: String?, completion: @escaping (String?) -> Void) {
         if let text = selectedTextFromAccessibility() {
             completion(clean(text))
             return
         }
 
-        guard Settings.shared.copyFallbackEnabled else {
+        guard Settings.shared.allowsCopyFallback(in: bundleID) else {
             completion(nil)
             return
         }
@@ -56,15 +56,23 @@ final class SelectionTextReader {
         }
 
         let pasteboard = NSPasteboard.general
+
+        // Clearing first would leave the pasteboard momentarily empty, which other
+        // selection tools watching it react to. Comparing changeCount detects the copy
+        // just as well and leaves the existing contents in place until the copy lands.
+        let changeCountBeforeCopy = pasteboard.changeCount
         let snapshot = PasteboardSnapshot(pasteboard: pasteboard)
-        pasteboard.clearContents()
-        let clearedChangeCount = pasteboard.changeCount
 
         postCommandC()
 
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.18) {
-            let changed = pasteboard.changeCount != clearedChangeCount
-            let copied = changed ? pasteboard.string(forType: .string) : nil
+            guard pasteboard.changeCount != changeCountBeforeCopy else {
+                // Nothing was copied, so the pasteboard is untouched and needs no restore.
+                completion(nil)
+                return
+            }
+
+            let copied = pasteboard.string(forType: .string)
             snapshot.restore(to: pasteboard)
             completion(self.clean(copied))
         }

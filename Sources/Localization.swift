@@ -260,6 +260,30 @@ struct Localization {
         }
     }
 
+    struct Fallback {
+        static var sectionTitle: String {
+            current == .english ? "Never use Command-C in these apps:" : "在以下应用中不使用 Command-C："
+        }
+
+        static var explanation: String {
+            current == .english ?
+                "Command-C is sent only where the app does not report the selection itself. It briefly changes the clipboard, which other selection tools such as PopClip react to, so they can flicker. List an app here to leave its clipboard alone." :
+                "只有当应用本身不提供选中内容时才会发送 Command-C。它会短暂改变剪贴板，PopClip 等其他划词工具会因此闪烁。将应用加入此列表即可不再干扰它。"
+        }
+
+        static var empty: String {
+            current == .english ?
+                "No exceptions. Add an app here if another selection tool flickers in it." :
+                "暂无例外。如果某个应用中其他划词工具出现闪烁，可将其加入。"
+        }
+
+        static var disabledNotice: String {
+            current == .english ?
+                "The Command-C fallback is off, so nothing is sent to any app." :
+                "Command-C 补充取词已关闭，不会向任何应用发送。"
+        }
+    }
+
     struct Filter {
         static var windowTitle: String {
             current == .english ? "Application Filter Settings" : "应用过滤设置"

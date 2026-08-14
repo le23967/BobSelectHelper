@@ -30,6 +30,14 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     private let inputBoxPopUp = NSPopUpButton()
     private let autoLaunchCheckbox = NSButton(checkboxWithTitle: "", target: nil, action: nil)
     private let copyFallbackCheckbox = NSButton(checkboxWithTitle: "", target: nil, action: nil)
+    private let fallbackHintLabel = NSTextField(labelWithString: "")
+    private let fallbackSectionLabel = NSTextField(labelWithString: "")
+    private let fallbackTable = NSTableView()
+    private let fallbackScroll = NSScrollView()
+    private let fallbackEmptyLabel = NSTextField(labelWithString: "")
+    private let fallbackAddButton = NSButton()
+    private let fallbackRemoveButton = NSButton()
+    private var excludedApps: [String] = []
 
     // Applications
     private let tabView = NSTabView()
@@ -200,8 +208,75 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         copyFallbackCheckbox.target = self
         copyFallbackCheckbox.action = #selector(toggleCopyFallback)
 
+        for label in [fallbackHintLabel, fallbackEmptyLabel] {
+            label.font = .systemFont(ofSize: 11)
+            label.textColor = .secondaryLabelColor
+            label.lineBreakMode = .byWordWrapping
+            label.maximumNumberOfLines = 5
+        }
+        fallbackHintLabel.preferredMaxLayoutWidth = 430
+        fallbackEmptyLabel.alignment = .center
+        fallbackEmptyLabel.textColor = .tertiaryLabelColor
+        fallbackEmptyLabel.translatesAutoresizingMaskIntoConstraints = false
+
+        fallbackSectionLabel.font = .systemFont(ofSize: 12, weight: .semibold)
+
+        let column = NSTableColumn(identifier: NSUserInterfaceItemIdentifier("fallbackApp"))
+        column.width = 400
+        fallbackTable.addTableColumn(column)
+        fallbackTable.headerView = nil
+        fallbackTable.dataSource = self
+        fallbackTable.delegate = self
+        fallbackTable.rowHeight = 24
+        fallbackTable.allowsMultipleSelection = true
+        fallbackTable.style = .inset
+
+        fallbackScroll.documentView = fallbackTable
+        fallbackScroll.hasVerticalScroller = true
+        fallbackScroll.borderType = .bezelBorder
+        fallbackScroll.translatesAutoresizingMaskIntoConstraints = false
+
+        let listArea = NSView()
+        listArea.translatesAutoresizingMaskIntoConstraints = false
+        listArea.addSubview(fallbackScroll)
+        listArea.addSubview(fallbackEmptyLabel)
+        NSLayoutConstraint.activate([
+            fallbackScroll.topAnchor.constraint(equalTo: listArea.topAnchor),
+            fallbackScroll.leadingAnchor.constraint(equalTo: listArea.leadingAnchor),
+            fallbackScroll.trailingAnchor.constraint(equalTo: listArea.trailingAnchor),
+            fallbackScroll.bottomAnchor.constraint(equalTo: listArea.bottomAnchor),
+            listArea.heightAnchor.constraint(equalToConstant: 96),
+            fallbackEmptyLabel.centerXAnchor.constraint(equalTo: listArea.centerXAnchor),
+            fallbackEmptyLabel.centerYAnchor.constraint(equalTo: listArea.centerYAnchor),
+            fallbackEmptyLabel.widthAnchor.constraint(lessThanOrEqualTo: listArea.widthAnchor, constant: -32)
+        ])
+
+        fallbackAddButton.bezelStyle = .smallSquare
+        fallbackAddButton.image = NSImage(systemSymbolName: "plus", accessibilityDescription: nil)
+        fallbackAddButton.target = self
+        fallbackAddButton.action = #selector(addFallbackExclusion)
+
+        fallbackRemoveButton.bezelStyle = .smallSquare
+        fallbackRemoveButton.image = NSImage(systemSymbolName: "minus", accessibilityDescription: nil)
+        fallbackRemoveButton.target = self
+        fallbackRemoveButton.action = #selector(removeFallbackExclusion)
+
+        for button in [fallbackAddButton, fallbackRemoveButton] {
+            button.translatesAutoresizingMaskIntoConstraints = false
+            button.widthAnchor.constraint(equalToConstant: 28).isActive = true
+            button.heightAnchor.constraint(equalToConstant: 22).isActive = true
+        }
+
+        let buttonRow = NSStackView(views: [fallbackAddButton, fallbackRemoveButton, NSView()])
+        buttonRow.orientation = .horizontal
+        buttonRow.spacing = 0
+
         let grid = makeGrid([({ Localization.Menu.bobInputBox }, inputBoxPopUp)])
-        return makeTabBody([grid, autoLaunchCheckbox, copyFallbackCheckbox])
+        return makeTabBody(
+            [grid, autoLaunchCheckbox, copyFallbackCheckbox, fallbackHintLabel,
+             fallbackSectionLabel, listArea, buttonRow],
+            fillWidth: true
+        )
     }
 
     private func buildApplicationsTab() -> NSView {
@@ -412,6 +487,12 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         copyFallbackCheckbox.title = Localization.Menu.useCopyFallback
         copyFallbackCheckbox.state = settings.copyFallbackEnabled ? .on : .off
 
+        fallbackHintLabel.stringValue = Localization.Fallback.explanation
+        fallbackSectionLabel.stringValue = Localization.Fallback.sectionTitle
+        fallbackAddButton.toolTip = Localization.Filter.addTooltip
+        fallbackRemoveButton.toolTip = Localization.Filter.removeTooltip
+        reloadExclusionList()
+
         modeSegment.setLabel(Localization.Filter.allowAll, forSegment: 0)
         modeSegment.setLabel(Localization.Filter.whitelist, forSegment: 1)
         modeSegment.setLabel(Localization.Filter.blacklist, forSegment: 2)
@@ -467,6 +548,25 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
         emptyLabel.isHidden = !listedApps.isEmpty
 
         appTable.reloadData()
+    }
+
+    private func reloadExclusionList() {
+        excludedApps = settings.copyFallbackExcludedApps.sorted {
+            displayName(for: $0).localizedCaseInsensitiveCompare(displayName(for: $1)) == .orderedAscending
+        }
+
+        let enabled = settings.copyFallbackEnabled
+        fallbackTable.isEnabled = enabled
+        fallbackAddButton.isEnabled = enabled
+        fallbackRemoveButton.isEnabled = enabled && fallbackTable.selectedRow >= 0
+        fallbackSectionLabel.textColor = enabled ? .labelColor : .disabledControlTextColor
+
+        fallbackEmptyLabel.stringValue = enabled
+            ? Localization.Fallback.empty
+            : Localization.Fallback.disabledNotice
+        fallbackEmptyLabel.isHidden = !excludedApps.isEmpty
+
+        fallbackTable.reloadData()
     }
 
     /// Resolves a bundle identifier to the app's real name and icon, caching the
@@ -555,6 +655,28 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 
     @objc private func toggleCopyFallback() {
         settings.copyFallbackEnabled = copyFallbackCheckbox.state == .on
+        reloadExclusionList()
+    }
+
+    @objc private func addFallbackExclusion() {
+        presentApplicationPicker { [weak self] bundleIDs in
+            guard let self else { return }
+            for bundleID in bundleIDs {
+                self.settings.addToCopyFallbackExclusions(bundleID)
+            }
+            self.reloadExclusionList()
+        }
+    }
+
+    @objc private func removeFallbackExclusion() {
+        let rows = fallbackTable.selectedRowIndexes
+        guard !rows.isEmpty else { return }
+        for row in rows {
+            guard let bundleID = excludedApps[safe: row] else { continue }
+            settings.removeFromCopyFallbackExclusions(bundleID)
+        }
+        fallbackTable.deselectAll(nil)
+        reloadExclusionList()
     }
 
     @objc private func requestAccessibility() {
@@ -568,22 +690,10 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
     }
 
     @objc private func addApp() {
-        guard let window, settings.appFilterMode != .allowAll else { return }
-
-        let panel = NSOpenPanel()
-        panel.allowsMultipleSelection = true
-        panel.canChooseDirectories = false
-        panel.canChooseFiles = true
-        panel.resolvesAliases = true
-        panel.allowedContentTypes = [.application]
-        panel.directoryURL = URL(fileURLWithPath: "/Applications")
-        panel.prompt = Localization.Filter.choosePanelPrompt
-        panel.message = Localization.Filter.choosePanelMessage
-
-        panel.beginSheetModal(for: window) { [weak self] response in
-            guard let self, response == .OK else { return }
-            for url in panel.urls {
-                guard let bundleID = SettingsWindowController.bundleIdentifier(at: url) else { continue }
+        guard settings.appFilterMode != .allowAll else { return }
+        presentApplicationPicker { [weak self] bundleIDs in
+            guard let self else { return }
+            for bundleID in bundleIDs {
                 switch self.settings.appFilterMode {
                 case .whitelist: self.settings.addToWhitelist(bundleID)
                 case .blacklist: self.settings.addToBlacklist(bundleID)
@@ -591,6 +701,28 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
                 }
             }
             self.reloadAppList()
+        }
+    }
+
+    /// Opens the standard picker restricted to applications and hands back the
+    /// identifier of everything chosen.
+    private func presentApplicationPicker(_ handler: @escaping ([String]) -> Void) {
+        guard let window else { return }
+
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.resolvesAliases = true
+        panel.treatsFilePackagesAsDirectories = false
+        panel.allowedContentTypes = [.application]
+        panel.directoryURL = URL(fileURLWithPath: "/Applications")
+        panel.prompt = Localization.Filter.choosePanelPrompt
+        panel.message = Localization.Filter.choosePanelMessage
+
+        panel.beginSheetModal(for: window) { response in
+            guard response == .OK else { return }
+            handler(panel.urls.compactMap { SettingsWindowController.bundleIdentifier(at: $0) })
         }
     }
 
@@ -622,12 +754,16 @@ final class SettingsWindowController: NSWindowController, NSWindowDelegate {
 // MARK: - Table
 
 extension SettingsWindowController: NSTableViewDataSource, NSTableViewDelegate {
+    private func rows(for tableView: NSTableView) -> [String] {
+        tableView === fallbackTable ? excludedApps : listedApps
+    }
+
     func numberOfRows(in tableView: NSTableView) -> Int {
-        listedApps.count
+        rows(for: tableView).count
     }
 
     func tableView(_ tableView: NSTableView, viewFor tableColumn: NSTableColumn?, row: Int) -> NSView? {
-        guard let bundleID = listedApps[safe: row] else { return nil }
+        guard let bundleID = rows(for: tableView)[safe: row] else { return nil }
         let identifier = NSUserInterfaceItemIdentifier("appCell")
 
         let cell: NSTableCellView
@@ -668,7 +804,12 @@ extension SettingsWindowController: NSTableViewDataSource, NSTableViewDelegate {
     }
 
     func tableViewSelectionDidChange(_ notification: Notification) {
-        removeButton.isEnabled = settings.appFilterMode != .allowAll && appTable.selectedRow >= 0
+        guard let table = notification.object as? NSTableView else { return }
+        if table === fallbackTable {
+            fallbackRemoveButton.isEnabled = settings.copyFallbackEnabled && table.selectedRow >= 0
+        } else {
+            removeButton.isEnabled = settings.appFilterMode != .allowAll && table.selectedRow >= 0
+        }
     }
 }
 

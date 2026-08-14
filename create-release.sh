@@ -21,32 +21,32 @@ echo "Creating GitHub Release v$VERSION"
 echo "===================================="
 echo ""
 
-RELEASE_NOTES="Bob Select Helper v0.6.2
+RELEASE_NOTES="Bob Select Helper v0.6.3
 
-## Picking applications now works like the rest of macOS
+## Fixes PopClip flickering in Word
 
-Adding an app to the whitelist or blacklist used to mean typing its name into a text field,
-with no icons and nothing to confirm you had picked the right thing.
+Word does not report its selection through Accessibility, so the helper falls back to
+sending Command-C and reading the clipboard. That fallback used to **empty** the clipboard
+first, so anything watching it saw it go blank, fill, then revert. PopClip watches the
+clipboard, and also sends its own Command-C in apps like Word, so it appeared and vanished
+on every selection.
 
-The Applications tab now has the standard **+** and **-** buttons. **+** opens the normal
-macOS file picker at /Applications, so you choose apps by their icon and name, and you can
-select several at once. The list shows each app's real icon and display name. **-** removes
-whatever you have selected.
+The clipboard is no longer emptied. The helper compares the change count across the copy
+instead, so:
 
-An empty list also tells you what that means: an empty whitelist blocks the helper
-everywhere, which is easy to do by accident.
+- the clipboard is never blank at any point
+- pasteboard changes drop from **three to two** per selection
+- an app that ignores the synthetic copy now causes **none at all**, where it previously
+  still triggered a clear and a restore
 
-## Also in 0.6.x
+Your clipboard contents are preserved exactly as before.
 
-- **Menu-bar only by default.** A Dock icon makes the app take focus and replace the
-  frontmost app's menu bar, which gets in the way of a tool that acts on selections made
-  elsewhere. The Dock switch is still in Settings if you want it.
-- A real Settings window with everything grouped under General / Appearance / Bob /
-  Applications, instead of a bare filter list.
-- English and 简体中文, switchable in the app, following your macOS language on first launch.
-- Fixed a crash in the mouse-event monitor, which removed its own handler mid-callback.
-- Lower overhead: drag events watched only during a drag, scroll events return immediately
-  when nothing is showing, settings read from memory rather than UserDefaults per event.
+## Per-app Command-C exceptions
+
+If a conflict remains, **Settings > Bob** now has **Never use Command-C in these apps**.
+Add an app with the same Finder picker used elsewhere, and the helper will never send
+Command-C there. It still reads the selection through Accessibility, so listing Word hands
+its clipboard entirely to PopClip while the helper keeps working normally everywhere else.
 
 ## Install
 
